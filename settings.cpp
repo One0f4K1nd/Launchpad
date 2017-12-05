@@ -35,7 +35,6 @@ Settings::Settings(QWidget *parent) :
 #ifndef Q_OS_WIN32
     ui->groupBox->setEnabled(true);
 #endif
-    //connect(ui->)
 }
 
 Settings::~Settings() {

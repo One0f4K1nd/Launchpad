@@ -223,7 +223,6 @@ DWORD WinDebugMonitor::WinDebugMonitorProcess()
     ret = ::WaitForSingleObject(m_hEventDataReady, TIMEOUT_WIN_DEBUG);
 
     if (ret == WAIT_OBJECT_0) {
-        //m_pDBBuffer->dwProcessI
         OutputWinDebugString(m_pDBBuffer->dwProcessId, m_pDBBuffer->data);
 
         // signal buffer ready

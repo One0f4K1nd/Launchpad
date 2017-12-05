@@ -42,7 +42,6 @@ void SelfUpdater::silentCheck() {
     QNetworkRequest request(MainWindow::selfUpdateUrl);
 
     selfUpdateNetworkManager.get(request);
-    //reply->
 }
 
 void SelfUpdater::closeEvent(QCloseEvent* event) {
@@ -92,8 +91,6 @@ void SelfUpdater::downloadVersionFinished(QNetworkReply* reply) {
         if (!silent)
             QMessageBox::information(this, "Version", "Launcher already on latest version");
 
-        //emit finished(0);
-
         done(0);
 
         return;
@@ -131,11 +128,10 @@ void SelfUpdater::downloadNewVersionFinished(QNetworkReply* reply) {
 
     qDebug() << "finished downloading new version";
 
-    int bufferSize = 8192 * 2;
+    const int bufferSize = 8192 * 2;
     char* buffer = (char*) malloc(bufferSize);
 
     QFile fileObject("setup.exe");
-    //fileObject.set
 
     if (!fileObject.open(QIODevice::WriteOnly)) {
         if (!silent)

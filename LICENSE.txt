@@ -1,5 +1,5 @@
                                 SWGEmu Launchpad
-    Copyright (C) 2013 SWGEmu
+    Copyright (C) 2017 SWGEmu
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by

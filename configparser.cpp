@@ -88,7 +88,6 @@ void ConfigParser::errorMessage(const QString& errorMsg, int lineNumber) {
 }
 
 int ConfigParser::parseDotExpression(QTextStream* stream, int lineNumber) {
-    //stream->
     QString expression = stream->readAll();
 
     if (!expression.contains(' ')) {
@@ -217,13 +216,11 @@ void ConfigParser::setVariable(const QString& variableName, const QString& varia
     if (configValues.contains(currentClassName)) {
         QVector<ConfigValue > classValues = configValues.value(currentClassName);
         classValues.append(ConfigValue(variableName, variableValue, currentFile));
-        //ConfigValue(const QString& varName, const QString& value, const QString& fileName = "")
 
         configValues.remove(currentClassName);
         configValues.insert(currentClassName, classValues);
     } else {
         QVector<ConfigValue > classValues;
-        //classValues.append(QPair<QString, QString>(variableName, variableValue));
         classValues.append(ConfigValue(variableName, variableValue, currentFile));
         configValues.insert(currentClassName, classValues);
     }
@@ -243,7 +240,7 @@ int ConfigParser::getConfigValue(const QString& className, const QString& variab
     QVector<ConfigValue> values = getValues(className);
 
     for (int i = values.size() - 1; i >= 0; --i) {
-        const ConfigValue val = values.at(i);
+        const ConfigValue& val = values.at(i);
 
         if (val.variableName.toLower() == variable.toLower()) {
             returnValue = val;
@@ -285,7 +282,7 @@ QVector<ConfigValue> ConfigParser::getConfigValues(const QString& className, con
     QVector<ConfigValue> returnValues;
 
     for (int i = values.size() - 1; i >= 0; --i) {
-        const ConfigValue val = values.at(i);
+        const ConfigValue& val = values.at(i);
 
         if (val.variableName.toLower() == variable.toLower()) {
             returnValues.append(val);

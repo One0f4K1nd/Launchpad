@@ -24,7 +24,6 @@ InstallFromSWG::InstallFromSWG(QWidget *parent) :
 
     ui->progressBar->setValue(0);
     ui->progressBar->setMaximum(0);
-    //connect(this, SIGNAL())
 
     connect(this, SIGNAL(fileCopiedSignal(QString,bool)), this, SLOT(fileCopied(QString,bool)));
 }
@@ -67,9 +66,7 @@ int InstallFromSWG::copyFiles() {
     QVector<QPair<QString, qint64> > requiredFiles = MainWindow::getRequiredFiles();
 
     for (int i = 0; i < requiredFiles.size() && !cancelThreads; ++i) {
-        const QPair<QString, qint64> file = requiredFiles.at(i);
-
-        //if (QDir(file))
+        const QPair<QString, qint64>& file = requiredFiles.at(i);
 
         if (file.first.contains("/")) {
             QString dir = emuFolder + file.first.mid(0, file.first.lastIndexOf("/"));
@@ -83,12 +80,7 @@ int InstallFromSWG::copyFiles() {
         bool result = QFile::copy(swgfolder + "/" + file.first, emuFolder + file.first);
 #endif
 
-        //bool result = true;
-        //QTimer::singleShot(0, this, SLOT(fileCopied(file.first, result)));
         emit fileCopiedSignal(file.first, result);
-/*
-        if (!result)
-            return 1;*/
     }
 
     return 0;

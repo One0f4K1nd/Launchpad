@@ -48,19 +48,19 @@ public:
         icon = ic;
     }
 
-    QString getColor() const {
+    const QString& getColor() const {
         return color;
     }
 
-    QString getContents() const {
+    const QString& getContents() const {
         return contents;
     }
 
-    QString getIcon() const {
+    const QString& getIcon() const {
         return icon;
     }
 
-    QString getName() const {
+    const QString& getName() const {
         return name;
     }
 

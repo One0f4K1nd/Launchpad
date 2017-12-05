@@ -55,8 +55,6 @@ void MacroEditor::loadAccounts() {
     for (int i = 0; i < accounts.size(); ++i) {
         ui->comboBox_accounts->addItem(accounts.at(i));
     }
-
-  //  loadMacros(accounts.at(0));
 }
 
 void MacroEditor::loadMacros(const QString& account) {
@@ -78,7 +76,6 @@ void MacroEditor::loadMacros(const QString& account) {
 
     QMap<int, GameMacro*>::iterator i;
     for (i = gameMacros.begin(); i != gameMacros.end(); ++i) {
-        //cout << i.key() << ": " << i.value() << endl;
         GameMacro* macro = i.value();
 
         ui->listWidget->addItem(macro);
@@ -104,7 +101,7 @@ QStringList MacroEditor::loadMacroNames(QFile& macrosFile) {
         QString line = stream.readLine();
 
         GameMacro* macro = new GameMacro();
-        //connect(macro, SIGNAL())
+
         if (!macro->parseMacro(line)) {
             delete macro;
             continue;

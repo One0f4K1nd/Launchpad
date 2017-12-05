@@ -32,7 +32,6 @@
 //#define ENABLE_MACRO_EDITOR
 
 QString MainWindow::patchUrl = "http://www.launchpad2.net/SWGEmu/"; // Insert download URL here
-//QString MainWindow::newsUrl = "http://www.swgemu.com/forums/index.php#bd";
 QString MainWindow::newsUrl = "http://www.swgemu.com/forums/forum.php";
 QString MainWindow::gameExecutable = "SWGEmu.exe";
 #ifdef Q_OS_WIN32
@@ -40,7 +39,7 @@ QString MainWindow::selfUpdateUrl = "http://launchpad2.net/setup.cfg"; // Insert
 #else
 QString MainWindow::selfUpdateUrl = "http://launchpad2.net/setuplinux86_64.cfg"; // Insert linux update URL here
 #endif
-const QString MainWindow::version = "0.23";
+const QString MainWindow::version = "0.24";
 
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
@@ -221,25 +220,17 @@ MainWindow::MainWindow(QWidget *parent) :
     }
 
     requiredFilesNetworkManager.get(QNetworkRequest(QUrl(patchUrl + "required2.txt")));
-    //patchesNetworkManager.get(QNetworkRequest(QUrl(patchUrl + "patches.txt")));
     silentSelfUpdater->silentCheck();
-
-    //ui->webView->setUrl(newsUrl);
-
-    //gameMods = new GameMods(this);
 }
 
 MainWindow::~MainWindow() {
     delete ui;
     ui = NULL;
 
-    //delete fileScanner;
     fileScanner = NULL;
 
-    //delete settings;
     settings = NULL;
 
-    //delete loginServers;
     loginServers = NULL;
 
     while (gameProcesses.size() > 0) {
@@ -256,10 +247,7 @@ MainWindow::~MainWindow() {
     }
     #endif
 
-    //delete silentSelfUpdater;
     silentSelfUpdater = NULL;
-
-    //gameMods = NULL;
 }
 
 void MainWindow::toolBarOrientationChanged(Qt::Orientation ) {
@@ -278,8 +266,6 @@ void MainWindow::toolBarOrientationChanged(Qt::Orientation ) {
     for (int i = 0; i < toolButtons.size(); ++i) {
         QToolButton* button = toolButtons.at(i);
         button->setToolButtonStyle(style);
-        button->set
-//        button->set
     }
     */
 }
@@ -351,7 +337,6 @@ void MainWindow::updateLoginServerList() {
 }
 
 void MainWindow::updateServerStatus() {
-    //ui->statusBar->showMessage("Updating server status..");
     ui->textBrowser->clear();
 
     readBasiliskServerStatus();
@@ -384,7 +369,7 @@ void MainWindow::triggerNews() {
         }
 
         ui->actionShow_news->setText("Hide news");
-        //ui->actionShow_news->setChecked(true);
+
         ui->groupBox_browser->show();
     } else {
         ui->groupBox_browser->hide();
@@ -392,7 +377,6 @@ void MainWindow::triggerNews() {
         if (!isMaximized())
             this->resize(907, 256);
 
-        //ui->actionShow_news->setChecked(false);
         ui->actionShow_news->setText("Show news");
     }
 }
@@ -437,16 +421,12 @@ void MainWindow::showAboutDialog() {
 
 void MainWindow::requiredFileDownloadFileFinished(QNetworkReply* reply) {
     if (reply && reply->error() != QNetworkReply::NoError) {
-       // QMessageBox::warning(this, "ERROR getting new patch information", reply->errorString());
-
         return;
     }
 
     qDebug() << "got required2.txt";
 
     QString data = reply->readAll();
-
-  //  qDebug() << data;
 
     QSettings settings;
    // QString folder = settings.value("swg_folder").toString();
@@ -466,15 +446,6 @@ void MainWindow::requiredFileDownloadFileFinished(QNetworkReply* reply) {
     //}
 
     startLoadBasicCheck();
-
-    /*
-        ui->pushButton_FullScan->setEnabled(false);
-        ui->pushButton_Start->setEnabled(false);
-
-        ui->label_current_work->setText("Checking for new client updates...");
-
-        QStringList currentFiles = getRequiredFiles();
-        */
 }
 
 void MainWindow::patchesDownloadFileFinished(QNetworkReply* reply) {
@@ -487,49 +458,49 @@ void MainWindow::patchesDownloadFileFinished(QNetworkReply* reply) {
     }
 
     try {
-    QString data = reply->readAll();
+        QString data = reply->readAll();
 
-    qDebug() << "got patches.txt" << data;
+        qDebug() << "got patches.txt" << data;
 
-    QTextStream file(&data);
+        QTextStream file(&data);
 
-    QSettings settings;
-    QString swgFolder = settings.value("swg_folder").toString();
+        QSettings settings;
+        QString swgFolder = settings.value("swg_folder").toString();
 
-    while (!file.atEnd()) {
-        QString fileString = file.readLine();
+        while (!file.atEnd()) {
+            QString fileString = file.readLine();
 
-        QByteArray line(fileString.toStdString().c_str());
-        //process_line(line);
+            QByteArray line(fileString.toStdString().c_str());
 
-        //QRegExp rx("(\\ |\\,|\\.|\\;|\\t)"); //RegEx for ' ' or ',' or '.' or ':' or '\t'
-        QList<QByteArray> query = line.split(';');
+            //QRegExp rx("(\\ |\\,|\\.|\\;|\\t)"); //RegEx for ' ' or ',' or '.' or ':' or '\t'
+            QList<QByteArray> query = line.split(';');
 
-        //QListIterator<QByteArray>
+            QString name = query.at(0);
+            QString size = query.at(1);
+            QString md5 = query.at(2).trimmed();
+            QString action = query.at(3);
 
-        QString name = query.at(0);
-        QString size = query.at(1);
-        QString md5 = query.at(2).trimmed();
-        QString action = query.at(3);
+            QString file = swgFolder + "/" + name;
 
-        QString file = swgFolder + "/" + name;
+            QFile fileObject(file);
 
-        QFile fileObject(file);
+            if ((action == "A") && !fileObject.exists()) {
+                qDebug() << file << "doesnt exist";
 
-        if ((action == "A") && !fileObject.exists()) {
-            qDebug() << file << "doesnt exist";
-            //return -1;
+                appendToFilesToDownloadStringList(MainWindow::patchUrl + name);
 
-            //filesToDownload.append(MainWindow::patchUrl + name);
-            appendToFilesToDownloadStringList(MainWindow::patchUrl + name);
+                continue;
+            } else if ((action == "D") && fileObject.exists()) {
+                if (!file.contains("..")) {
+                    fileObject.remove();
+                } else {
+                    qDebug() << "file to delete contains invalid characters";
+                }
+            } else if (action == "U" && fileObject.exists()) {
 
-            continue;
-        } else if ((action == "D") && fileObject.exists()) {
-            fileObject.remove();
+            }
         }
-    }
-    }
-    catch (...) {
+    } catch (...) {
         enableStart();
     }
 
@@ -552,13 +523,7 @@ void MainWindow::updateBasicLoadProgress(QString successFile) {
 }
 
 void MainWindow::updateFullScanProgress(QString successFile, bool success) {
-    /*if (success)
-    ui->label_current_work->setText(successFile + " valid.");
-  else
-    ui->label_current_work->setText(successFile + " invalid!");*/
-
     if (!success) {
-        //ui->label_current_work->setPalette(QPalette::);
         ui->label_current_work->setStyleSheet("color:red");
         ui->label_current_work->setText(successFile + " invalid!");
     }
@@ -645,7 +610,7 @@ void MainWindow::startLoadBasicCheck() {
         return;
 
     ui->pushButton_Start->setEnabled(false);
-//    ui->pushButton_Start->setText("Start (" + QString::number(updateTimeCounter) + ")");
+
     ui->label_current_work->setStyleSheet("color:black");
     ui->label_current_work->setText("Checking files and updates..");
 
@@ -660,8 +625,6 @@ void MainWindow::startLoadBasicCheck() {
 
     QFuture<int> future = QtConcurrent::run(fileScanner, &FileScanner::loadAndBasicCheckFiles, swgFolder);
     loadWatcher.setFuture(future);
-
-    //QTimer::singleShot(1000, this, SLOT(runUpdateCheckTimer()));
 }
 
 void MainWindow::runUpdateCheckTimer() {
@@ -671,10 +634,6 @@ void MainWindow::runUpdateCheckTimer() {
         ui->pushButton_Start->setText("Start (" + QString::number(updateTimeCounter) + ")");
     } else {
         ui->pushButton_Start->setText("Start");
-
-        //ui->pushButton_Start->setEnabled(true);
-
-    //    qDebug() << "hui is: " << updateTimeCounter;
 
         if (updateTimeCounter == -1) {
             enableStart();
@@ -697,7 +656,6 @@ void MainWindow::startFileDownload() {
     ui->progressBar_loading->setMaximum(requiredFilesCount);
     ui->progressBar_loading->setValue(0);
 
-    //filesToDownload = files;
     nextFileToDownload = 0;
 
     QString downloadingFile = filesToDownload.at(nextFileToDownload);
@@ -752,7 +710,6 @@ void MainWindow::downloadFileFinished(QNetworkReply* reply) {
         QDir(swgFolder + "/" + dir).mkpath(".");
 
     QFile fileObject(fullPath);
-    //fileObject.set
 
     if (!fileObject.open(QIODevice::WriteOnly)) {
         QMessageBox::critical(this, "ERROR", "Could not open to write downloaded file to disk! " + swgFolder + "/" + downloadedFile);
@@ -865,17 +822,10 @@ void MainWindow::startKodanCalculator() {
 }
 
 void MainWindow::startSWGSetup() {
-    //QMessageBox::
-    //QProcess* process = new QProcess();
     QSettings settings;
     QString folder = settings.value("swg_folder").toString();
 
 #ifdef Q_OS_WIN32
-
-    //qDebug() << folder;
-    /*process->setWorkingDirectory(folder);
-    process->start(folder + "\\" + "SWGEmu_Setup.exe");*/
-
     if (!QProcess::startDetached(folder + "\\" + "SWGEmu_Setup.exe", QStringList(), folder)) {
         QMessageBox::warning(this, "ERROR", "Could not launch game settings!");
     }
@@ -919,26 +869,11 @@ void MainWindow::downloadFinished() {
     ui->pushButton_FullScan->setEnabled(true);
 
     qDebug() << "download finished";
-
-    //startLoadBasicCheck();
 }
 
 void MainWindow::showSettings() {
     settings->exec();
 }
-/*
-void MainWindow::fullScanFinished() {
-    if (cancelWorkingThreads)
-        return;
-
-    int res = fullScanWatcher.result();
-
-    qDebug() << "full scan finished with result " << res;
-
-    if (res == 0)
-        ui->label_current_work->setText("Full scan successfull");
-}
-*/
 
 void MainWindow::enableStart() {
     ui->pushButton_Start->setEnabled(true);
@@ -979,11 +914,7 @@ void MainWindow::loadFinished() {
 
 QVector<QPair<QString, qint64> > MainWindow::getRequiredFiles() {
     QSettings settings;
-    //QString folder = settings.value("swg_folder").toString();
-
     QVector<QPair<QString, qint64> > data;
-
-    //QStringList files;
 
     //if (QDir(folder).exists()) {
      {
@@ -1020,19 +951,14 @@ QVector<QPair<QString, qint64> > MainWindow::getRequiredFiles() {
 
     while (!file.atEnd()) {
         QByteArray line = file.readLine();
-        //process_line(line);
 
         //QRegExp rx("(\\ |\\,|\\.|\\;|\\t)"); //RegEx for ' ' or ',' or '.' or ':' or '\t'
         QList<QByteArray> query = line.split(';');
-
-        //QListIterator<QByteArray>
 
         QString name = query.at(0);
         QString size = query.at(1);
         QString md5 = query.at(2);
 
-        //files.append(name);
-        //line.
         data.append(QPair<QString, qint64>(name, size.toLongLong()));
     }
 
@@ -1118,56 +1044,6 @@ void MainWindow::startSWG() {
             QMessageBox::warning(this, "Error", "Could not write swgemu_login.cfg!");
         }
     }
-/*
-    arguments.append("--");
-    arguments.append("-s");
-    arguments.append("ClientGame");
-    arguments.append("cameraFarPlane=4096");
-*/
-/*
-    arguments.append("--");
-    arguments.append("-s");
-    arguments.append("SharedFoundation");
-    arguments.append("minFrameRate=60");
-*/
-  //  QFile executable()
-/*
-    arguments.append("--");
-    arguments.append("-s");
-    arguments.append("ClientTerrain");
-    arguments.append("dynamicNearFloraDistance=128");
-
-    arguments.append("--");
-    arguments.append("-s");
-    arguments.append("ClientTerrain");
-    arguments.append("staticNonCollidableFloraDistance=2048");
-
-    arguments.append("--");
-    arguments.append("-s");
-    arguments.append("ClientProceduralTerrainAppearance_LevelOfDetail");
-    arguments.append("forceHighThreshold=40");
-
-    arguments.append("--");
-    arguments.append("-s");
-    arguments.append("ClientProceduralTerrainAppearance_LevelOfDetail");
-    arguments.append("threshold=40");
-
-    arguments.append("--");
-    arguments.append("-s");
-    arguments.append("ClientProceduralTerrainAppearance_LevelOfDetail");
-    arguments.append("heightBiasMax=4096");
-*/
-    //ClientProceduralTerrainAppearance_LevelOfDetail.heightBiasMax
-
-
-
-    //ClientGame.cameraFarPlane
-
-    /*ClientProceduralTerrainAppearance_LevelOfDetail.threshold*/
-
-
-    /*ClientProceduralTerrainAppearance_LevelOfDetail.forceHighThreshold*/
-
 
     arguments.append("--");
     arguments.append("-s");
@@ -1212,11 +1088,9 @@ void MainWindow::startSWG() {
     bar->setTabTextColor(tabIndex, Qt::green);
     bar->setTabIcon(tabIndex, QIcon(":/img/tab.svg"));
 
-    //process->show();
     bool startResult = process->start(folder, gameExecutable, arguments);
 
     if (startResult) {
-        //showMinimized();
         if (settings.value("minimize_after_start", false).toBool()) {
             systemTrayIcon->show();
 
@@ -1226,9 +1100,7 @@ void MainWindow::startSWG() {
 }
 
 void MainWindow::gameProcessFinished(GameProcess* process, int ) {
-    //ui->tabWidget->fi
     int index = ui->tabWidget->indexOf(process);
-    //ui->tabWidget->setTabText(index, "");
 
     if (index < 1)
         return;
@@ -1253,7 +1125,6 @@ void MainWindow::statusXmlIsReady(QNetworkReply* reply) {
     QXmlInputSource inputSource;
     inputSource.setData(reply->readAll());
 
-    //StatusXmlContentHandler* handler = new StatusXmlContentHandler(this);
     StatusXmlContentHandler handler(this);
     xmlReader.setContentHandler(&handler);
     xmlReader.parse(&inputSource);
@@ -1272,14 +1143,11 @@ void MainWindow::statusXmlIsReady(QNetworkReply* reply) {
 
         stream << "<div align=\"center\">Current online connections: " << values->value("connected") << "</div>";
         stream << "<div align=\"center\">Max allowed connections: " << values->value("cap") << "</div>";
-        /*QDateTime upTime;
-        upTime.addSecs(values->value("uptime").toULong());*/
-        //upTime.
-        //stream << "<div align=\"center\">Uptime: " << values->value("uptime") << " seconds</div>";
+
         QString uptimeString;
         QTextStream uptimeStream(&uptimeString);
         qint64 uptimeSeconds = values->value("uptime").toULongLong();
-        //if (uptimeSeconds % )
+
         qint64 minutes = uptimeSeconds / 60 % 60;
         qint64 hours = uptimeSeconds / 3600 % 24;
         qint64 days = uptimeSeconds / 86400;
@@ -1310,9 +1178,6 @@ void MainWindow::webPageLoadFinished(bool ok) {
     }
 
     ui->statusBar->showMessage("swgemu.com loaded.");
-
-   //updateDonationMeter();
-    //e.
 }
 
 void MainWindow::updateDonationMeter() {
@@ -1382,7 +1247,6 @@ void MainWindow::closeTab(int index) {
         widget->disconnect();
         widget->clearOutputLogScreen();
         widget->deleteLater();
-        //delete widget;
     }
 }
 

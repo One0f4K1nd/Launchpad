@@ -12,8 +12,6 @@ StatusXmlContentHandler::~StatusXmlContentHandler() {
 bool StatusXmlContentHandler::startElement(const QString & , const QString & ,
                                         const QString & qName, const QXmlAttributes &  ) {
 
-  //std::cout << qName.toStdString() << ": ";
-
   currentElement = qName;
   currentValue = "";
 

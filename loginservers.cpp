@@ -164,7 +164,5 @@ void LoginServers::addServer() {
         return;
     }
 
-    //addServever()
     addServer(dialog.getName().trimmed(), dialog.getHost().trimmed(), dialog.getPort());
-    //QString name = dialog.u
 }

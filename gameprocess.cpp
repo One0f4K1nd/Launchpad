@@ -138,7 +138,6 @@ void GameProcess::killProcess() {
     if (QMessageBox::question(this, "Warning", "Are you sure you want to attempt terminate this process?") != QMessageBox::Yes)
         return;
 
-    //process->kill();
     process->terminate();
 }
 
@@ -156,10 +155,10 @@ void GameProcess::dumpConfigValues() {
         QString className = it.key();
 
         ui->textBrowser->append("[" + className + "]");
-        QVector<ConfigValue> configValues = it.value();
+        const QVector<ConfigValue>& configValues = it.value();
 
         for (int i = 0; i < configValues.size(); ++i) {
-            const ConfigValue val = configValues.at(i);
+            const ConfigValue& val = configValues.at(i);
 
             ui->textBrowser->append("\t" + val.variableName + " = " + val.variableValue + " \t\tdefined in: " + val.fileName);
         }
@@ -168,7 +167,6 @@ void GameProcess::dumpConfigValues() {
     }
     ui->textBrowser->append("Config dump end");
     ui->textBrowser->append("------------------------------------------------------------------------------------------------------------------------------------");
-    //ui->textBrowser->
 
     QScrollBar *sb = ui->textBrowser->verticalScrollBar();
     sb->setValue(sb->maximum());
@@ -191,8 +189,6 @@ void GameProcess::outputDebugString(QString str) {
 }
 
 void GameProcess::outputDebugString(int processId, QString str) {
-    //QDateTime currentStamp = ;
-
     QString date = QDateTime::currentDateTime().toString("hh:mm:ss");
     #ifdef Q_OS_WIN32
     if (processId < 0 || (process && process->pid()->dwProcessId == processId)) {
@@ -215,7 +211,6 @@ void GameProcess::finished(int exitCode, QProcess::ExitStatus ) {
 
 void GameProcess::outputChannelDataReady() {
     qDebug() << "data ready emitted";
-    //qDebug() << process->readAllStandardOutput();
 }
 
 void GameProcess::startError(QProcess::ProcessError err) {
@@ -234,8 +229,6 @@ void GameProcess::startError(QProcess::ProcessError err) {
         errorMessage = "Unknown error!";
         break;
     }
-
-    //QMessageBox::critical( this, "ERROR", "Could not launch client! " + errorMessage);
 
     ui->textBrowser->append(errorMessage);
 }

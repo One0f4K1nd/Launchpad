@@ -43,7 +43,6 @@ public slots:
   void statusXmlIsReady(QNetworkReply*);
   void startSWG();
   void loadFinished();
-  //void fullScanFinished();
 
   void startFullScan(bool forceConfigRestore = false);
   static QVector<QPair<QString, qint64> > getRequiredFiles();
@@ -79,10 +78,7 @@ public slots:
 
   void updateDonationMeter();
 
-  //void fullScanFile(const QString& file, const QString& name, qint64, const QString &md5);
   void addFileToDownloadSlot(QString file); 
-  //int fullScanSingleThreaded(bool);
-  //void fullScanMultiThreaded(bool);
 
   void toolBarOrientationChanged(Qt::Orientation);
   void startKodanCalculator();
@@ -104,10 +100,7 @@ public slots:
 
 signals:
   void startDownload();
-  //void requiredFileExists(QString);
-  //void fullScannedFile(QString, bool);
   void fileDownloaded(QString);
-  //void addFileToDownload(QString);
 
 private:
   Ui::MainWindow *ui;
@@ -143,9 +136,6 @@ private:
 
   QVector<QToolButton*> toolButtons;
   FileScanner* fileScanner;
-
-  //GameMods* gameMods;
-
 };
 
 #endif // MAINWINDOW_H

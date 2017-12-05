@@ -55,7 +55,6 @@ bool GameMacro::parseMacro(const QString& macroString) {
     qDebug() << "serialized: " << toString();
 
     return true;
-    //names.append(name);
 }
 
 QString GameMacro::toString() {
