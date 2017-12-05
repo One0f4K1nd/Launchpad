@@ -50,10 +50,7 @@ bool GameMods::checkFpsMod() {
         bool result = executable.seek(FPS_ADDRESS);
 
         if (result) {
-            //char buffer[7];
             QByteArray array = executable.read(3);
-
-            //quint32 data = *(quint32*)buffer;
 
             //qDebug() << array.toHex();
 
@@ -156,7 +153,5 @@ void GameMods::setMovementMod(bool val) {
                 QMessageBox::warning(this, "ERROR", "Failed to remove the movement mod! Could not delete file");
             }
         }
-        //file.open()
-        //file.remove();
     }
 }

@@ -31,8 +31,10 @@
 
 //#define ENABLE_MACRO_EDITOR
 
+//#define ENABLE_NEWS_BUTTON
+
 QString MainWindow::patchUrl = "http://www.launchpad2.net/SWGEmu/"; // Insert download URL here
-QString MainWindow::newsUrl = "http://www.swgemu.com/forums/forum.php";
+QString MainWindow::newsUrl = "https://www.swgemu.com/forums/forum.php";
 QString MainWindow::gameExecutable = "SWGEmu.exe";
 #ifdef Q_OS_WIN32
 QString MainWindow::selfUpdateUrl = "http://launchpad2.net/setup.cfg"; // Insert update URL here
@@ -71,6 +73,7 @@ MainWindow::MainWindow(QWidget *parent) :
     systemTrayMenu->addAction(closeAction);
     systemTrayIcon->setContextMenu(systemTrayMenu);
 
+#ifdef ENABLE_NEWS_BUTTON
     QToolButton* newsButton = new QToolButton(ui->mainToolBar);
     newsButton->setIcon(QIcon(":/img/globe.svg"));
     newsButton->setText("News");
@@ -79,6 +82,7 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->mainToolBar->addWidget(newsButton);
     connect(newsButton, SIGNAL(clicked()), this, SLOT(triggerNews()));
     toolButtons.append(newsButton);
+#endif
 
     QToolButton* updateStatusButton = new QToolButton(ui->mainToolBar);
     updateStatusButton->setIcon(QIcon(":/img/update_status.svg"));
@@ -574,7 +578,7 @@ void MainWindow::startFullScan(bool forceConfigRestore) {
     ui->progressBar_FullScan->setValue(0);
 
     ui->label_current_work->setStyleSheet("color:black");
-    ui->label_current_work->setText("Doing full scan..");
+    ui->label_current_work->setText("Doing full scan...");
     ui->actionFolders->setEnabled(false);
 
     filesToDownload.clear();
@@ -927,13 +931,9 @@ QVector<QPair<QString, qint64> > MainWindow::getRequiredFiles() {
 
                     QList<QByteArray> query = line.split(';');
 
-                    //QListIterator<QByteArray>
-
                     QString name = query.at(0);
                     QString size = query.at(1);
                     QString md5 = query.at(2);
-
-                    //files.append(name);
 
                     data.append(QPair<QString, qint64>(name, size.toLongLong()));
                 }
