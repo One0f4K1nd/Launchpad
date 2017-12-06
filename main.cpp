@@ -9,6 +9,7 @@
 int main(int argc, char *argv[]) {
   QApplication a(argc, argv);
 
+  /*
 #ifdef Q_OS_WIN32
   SingleInstance instance(TEXT("DCB15209-9E02-489D-9FD6-03689735BD49"));
 
@@ -17,7 +18,7 @@ int main(int argc, char *argv[]) {
       return 1;
   }
 #endif
-
+*/
   MainWindow w;
   w.show();
 

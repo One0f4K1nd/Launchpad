@@ -204,7 +204,7 @@ void GameProcess::outputDebugString(int processId, QString str) {
 void GameProcess::finished(int exitCode, QProcess::ExitStatus ) {
     process = NULL;
 
-    ui->textBrowser->append("Process exited with exit code " + QString::number(exitCode));
+    ui->textBrowser->append("Process finished with exit code " + QString::number(exitCode));
 
     emit processFinished(this, exitCode);
 }

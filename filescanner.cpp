@@ -94,9 +94,9 @@ void FileScanner::fullScanMultiThreaded(bool ) {
         QString size = query.at(1);
         QString md5 = query.at(2).trimmed();
 
-        QString file = swgFolder + "/" + name;
+        QString fullFile = swgFolder + "/" + name;
 
-        QtConcurrent::run(this, &FileScanner::fullScanFile, file, name, size.toLongLong(), md5);
+        QtConcurrent::run(this, &FileScanner::fullScanFile, fullFile, name, size.toLongLong(), md5);
     }
 
     delete file;

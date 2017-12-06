@@ -19,7 +19,6 @@ public:
 
     void fullScanFile(const QString& file, const QString& name, qint64, const QString &md5);
 
-
     static bool checkSwgFolder(const QString& dir);
     static bool isARequiredFile(const QString& name);
 

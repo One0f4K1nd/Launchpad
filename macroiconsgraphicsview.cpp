@@ -92,7 +92,7 @@ void MacroIconsGraphicsView::parseIconMetadata() {
             connect(rectangle, SIGNAL(iconClicked(MacroItemRect*)), this, SLOT(iconClicked(MacroItemRect*)));
 
             icons.insert(name, rectangle);
-            //rectangle->set
+
             QPen pen = rectangle->pen();
             pen.setWidth(2);
             pen.setStyle(Qt::NoPen);
@@ -100,7 +100,6 @@ void MacroIconsGraphicsView::parseIconMetadata() {
             rectangle->setPen(pen);
 
             this->scene()->addItem(rectangle);
-            //          }
         }
     }
 

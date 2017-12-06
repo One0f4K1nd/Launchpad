@@ -20,8 +20,8 @@
 #include "utils.h"
 #include "filescanner.h"
 #include "macroeditor.h"
-#include <QWebElement>
-#include <QWebFrame>
+//#include <QWebElement>
+//#include <QWebFrame>
 
 #if QT_VERSION >= 0x050000
 #include <QtConcurrent/QtConcurrentRun>
@@ -34,7 +34,7 @@
 //#define ENABLE_NEWS_BUTTON
 
 QString MainWindow::patchUrl = "http://www.launchpad2.net/SWGEmu/"; // Insert download URL here
-QString MainWindow::newsUrl = "https://www.swgemu.com/forums/forum.php";
+QString MainWindow::newsUrl = "https://www.gmail.com";
 QString MainWindow::gameExecutable = "SWGEmu.exe";
 #ifdef Q_OS_WIN32
 QString MainWindow::selfUpdateUrl = "http://launchpad2.net/setup.cfg"; // Insert update URL here
@@ -153,7 +153,9 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(&clientFilesNetworkAccessManager, SIGNAL(finished(QNetworkReply*)), this, SLOT(downloadFileFinished(QNetworkReply*)));
     connect(&requiredFilesNetworkManager, SIGNAL(finished(QNetworkReply*)), this, SLOT(requiredFileDownloadFileFinished(QNetworkReply*)));
     connect(&patchesNetworkManager, SIGNAL(finished(QNetworkReply*)), this, SLOT(patchesDownloadFileFinished(QNetworkReply*)));
-    connect(ui->webView, SIGNAL(loadFinished(bool)), this, SLOT(webPageLoadFinished(bool)));
+
+    //connect(ui->webView, SIGNAL(loadFinished(bool)), this, SLOT(webPageLoadFinished(bool)));
+
     connect(ui->pushButton_Start, SIGNAL(clicked()), this, SLOT(startSWG()));
     connect(fileScanner, SIGNAL(requiredFileExists(QString)), this, SLOT(updateBasicLoadProgress(QString)));
     connect(fileScanner, SIGNAL(fullScannedFile(QString, bool)), this, SLOT(updateFullScanProgress(QString, bool)));
@@ -170,7 +172,9 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(fileScanner, SIGNAL(addFileToDownload(QString)), this, SLOT(addFileToDownloadSlot(QString)));
     connect(ui->actionInstall_from_SWG, SIGNAL(triggered()), this, SLOT(installSWGEmu()));
 
+#ifdef ENABLE_NEWS_BUTTON
     ui->groupBox_browser->hide();
+#endif
 
     QTabBar* tabBar = ui->tabWidget->tabBar();
     tabBar->setTabButton(0, QTabBar::RightSide, 0);
@@ -188,7 +192,6 @@ MainWindow::MainWindow(QWidget *parent) :
     updateServerStatus();
 
     connect(&loadWatcher, SIGNAL(finished()), this, SLOT(loadFinished()));
-    //connect(&fullScanWatcher, SIGNAL(finished()), this, SLOT(fullScanFinished()));
     connect(ui->pushButton_FullScan, SIGNAL(clicked()), this, SLOT(startFullScan()));
 
     loginServers->reloadServers();
@@ -353,6 +356,7 @@ void MainWindow::triggerMultipleInstances(bool newValue) {
 }
 
 void MainWindow::triggerNews() {
+#ifdef ENABLE_NEWS_BUTTON
     if (ui->groupBox_browser->isHidden()) {
         ui->statusBar->showMessage("Loading page...");
         ui->webView->setUrl(newsUrl);
@@ -383,9 +387,8 @@ void MainWindow::triggerNews() {
 
         ui->actionShow_news->setText("Show news");
     }
+#endif
 }
-
-
 
 QFile* MainWindow::getRequiredFilesFile() {
     QSettings settings;
@@ -500,7 +503,7 @@ void MainWindow::patchesDownloadFileFinished(QNetworkReply* reply) {
                 } else {
                     qDebug() << "file to delete contains invalid characters";
                 }
-            } else if (action == "U" && fileObject.exists()) {
+            } else if (action == "ADDTRE" && fileObject.exists()) {
 
             }
         }
@@ -994,7 +997,7 @@ void MainWindow::startSWG() {
         stream << "You have several login server addresses defined in the following swg config files: ";
 
         for (int i = 0; i < loginServerAddresses.size(); ++i) {
-            const ConfigValue val = loginServerAddresses.at(i);
+            const ConfigValue& val = loginServerAddresses.at(i);
 
             stream << val.fileName << " ";
         }
@@ -1011,7 +1014,7 @@ void MainWindow::startSWG() {
         stream << "You have several login server ports defined in the following swg config files: ";
 
         for (int i = 0; i < loginServerPorts.size(); ++i) {
-            const ConfigValue val = loginServerPorts.at(i);
+            const ConfigValue& val = loginServerPorts.at(i);
 
             stream << val.fileName << " ";
         }
@@ -1181,6 +1184,7 @@ void MainWindow::webPageLoadFinished(bool ok) {
 }
 
 void MainWindow::updateDonationMeter() {
+#ifdef ENABLE_NEWS_BUTTON
     QWebElement e = ui->webView->page()->mainFrame()->findFirstElement("span#ds_bar_67_percentText");
 
     QString value = e.toPlainText();
@@ -1189,6 +1193,7 @@ void MainWindow::updateDonationMeter() {
     ui->donationBar->setValue(num.toInt());
 
     ui->label_current_work->setText("Donation meter loaded.");
+#endif
 }
 
 void MainWindow::closeEvent(QCloseEvent *event) {
