@@ -76,6 +76,8 @@ public slots:
   void showGameModsOptions();
   void showMacroEditor();
 
+  void sslErrors(QNetworkReply* reply, const QList<QSslError>& errors);
+
   void updateDonationMeter();
 
   void addFileToDownloadSlot(QString file); 

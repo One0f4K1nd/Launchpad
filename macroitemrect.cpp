@@ -27,3 +27,4 @@ void MacroItemRect::unselectIcon() {
     pen.setStyle(Qt::NoPen);
     this->setPen(pen);
 }
+

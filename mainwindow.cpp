@@ -22,6 +22,9 @@
 #include "macroeditor.h"
 //#include <QWebElement>
 //#include <QWebFrame>
+#include <QNetworkConfiguration>
+
+#include <QSsl>
 
 #if QT_VERSION >= 0x050000
 #include <QtConcurrent/QtConcurrentRun>
@@ -33,8 +36,11 @@
 
 //#define ENABLE_NEWS_BUTTON
 
+#define BASILISK_STATUS_XML "https://www.swgemu.com/status/basilisk.xml"
+#define NOVA_STATUS_XML "https://www.swgemu.com/status/nova.xml"
+
 QString MainWindow::patchUrl = "http://www.launchpad2.net/SWGEmu/"; // Insert download URL here
-QString MainWindow::newsUrl = "https://www.gmail.com";
+QString MainWindow::newsUrl = "https://www.swgemu.com/forums/forum.php";
 QString MainWindow::gameExecutable = "SWGEmu.exe";
 #ifdef Q_OS_WIN32
 QString MainWindow::selfUpdateUrl = "http://launchpad2.net/setup.cfg"; // Insert update URL here
@@ -148,8 +154,13 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(systemTrayIcon, SIGNAL(activated(QSystemTrayIcon::ActivationReason)), this, SLOT(systemTrayActivated(QSystemTrayIcon::ActivationReason)));
     connect(closeAction, SIGNAL(triggered()), qApp, SLOT(quit()));
     connect(ui->actionFolders, SIGNAL(triggered()), this, SLOT(showSettings()));
+
     connect(&networkAccessManager, SIGNAL(finished(QNetworkReply*)), this, SLOT(statusXmlIsReady(QNetworkReply*)) );
     connect(&novaNetworkAccessManager, SIGNAL(finished(QNetworkReply*)), this, SLOT(statusXmlIsReady(QNetworkReply*)) );
+
+    connect(&networkAccessManager, SIGNAL(sslErrors(QNetworkReply*, const QList<QSslError>&)), this, SLOT(sslErrors(QNetworkReply*, const QList<QSslError>&)) );
+    connect(&novaNetworkAccessManager, SIGNAL(sslErrors(QNetworkReply*, const QList<QSslError>&)), this, SLOT(sslErrors(QNetworkReply*, const QList<QSslError>&)) );
+
     connect(&clientFilesNetworkAccessManager, SIGNAL(finished(QNetworkReply*)), this, SLOT(downloadFileFinished(QNetworkReply*)));
     connect(&requiredFilesNetworkManager, SIGNAL(finished(QNetworkReply*)), this, SLOT(requiredFileDownloadFileFinished(QNetworkReply*)));
     connect(&patchesNetworkManager, SIGNAL(finished(QNetworkReply*)), this, SLOT(patchesDownloadFileFinished(QNetworkReply*)));
@@ -311,11 +322,25 @@ void MainWindow::deleteProfiles() {
 }
 
 void MainWindow::readBasiliskServerStatus() {
-    networkAccessManager.get(QNetworkRequest(QUrl("http://www.swgemu.com/status/basilisk.xml")));
+    QNetworkRequest request = QNetworkRequest(QUrl(BASILISK_STATUS_XML));
+
+    /*QSslConfiguration ssl = request.sslConfiguration();
+    ssl.setSslOption(QSsl::SslOptionDisableServerNameIndication, true);
+
+    request.setSslConfiguration(ssl);*/
+
+    networkAccessManager.get(request);
 }
 
 void MainWindow::readNovaServerStatus() {
-    novaNetworkAccessManager.get(QNetworkRequest(QUrl("http://www.swgemu.com/status/nova.xml")));
+    QNetworkRequest request = QNetworkRequest(QUrl(NOVA_STATUS_XML));
+
+    /*QSslConfiguration ssl = request.sslConfiguration();
+    ssl.setSslOption(QSsl::SslOptionDisableServerNameIndication, true);
+
+    request.setSslConfiguration(ssl);*/
+
+    novaNetworkAccessManager.get(request);
 }
 
 void MainWindow::checkForUpdates() {
@@ -1112,16 +1137,29 @@ void MainWindow::gameProcessFinished(GameProcess* process, int ) {
     bar->setTabTextColor(index, Qt::red);
 }
 
+void MainWindow::sslErrors(QNetworkReply* , const QList<QSslError> &errors) {
+    for (int i = 0; i < errors.size(); ++i) {
+        qDebug() << errors.at(i).errorString();
+    }
+}
+
 void MainWindow::statusXmlIsReady(QNetworkReply* reply) {
     qDebug() << "updating server status";
 
-    if (reply->error() != QNetworkReply::NoError) {
+    if (reply->error() != QNetworkReply::NoError) {        
         QString errorStr = reply->errorString();
 
+        QString message;
+        QTextStream stream(&message);
+
+        stream << "Error while fetching server status :" << reply->error();
+
         if (!errorStr.isEmpty()) {
-            ui->textBrowser->setText("Error while fetching server status:" + errorStr);
-            return;
+            stream << " " << errorStr;
         }
+
+        ui->textBrowser->setText(message);
+        return;
     }
 
     QXmlSimpleReader xmlReader;
