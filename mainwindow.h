@@ -58,22 +58,15 @@ public:
   public slots:
   void showSettings();
   void statusXmlIsReady();
-  //bool transferXMLStatus(std::string);
   void startSWG();
   void loadFinished();
   int readBasiliskServerStatus();
-
   void startFullScan(bool forceConfigRestore = false);
-  //void extractFiles();
   static QVector<QPair<QString, qint64> > getRequiredFiles();
   void downloadFinished();
   void downloadFileFinished(QNetworkReply *reply);
-
-  //void readNovaServerStatus();
   void webPageLoadFinished(bool ok);
   void downloadProgress(qint64 bytesReceived, qint64 bytesTotal);
-  //void closeEvent(QCloseEvent *event);
-
   void triggerNews();
   void updateBasicLoadProgress(QString successFile);
   void updateFullScanProgress(QString successFile, bool success);
@@ -115,7 +108,7 @@ public:
       return fullScanWorkingThreads.deref();
   }
 
-  volatile bool doCancelWorkingThreads() {
+  bool doCancelWorkingThreads() {
       return cancelWorkingThreads;
   }
 
@@ -126,12 +119,10 @@ public:
 signals:
   void startDownload();
   void fileDownloaded(QString);
-//  void transferXMLStatus();
-  void WidgetClosed();
+  void finished();
 
 private:
   Ui::MainWindow *ui;
-  //Ui::MainWindow::readBasiliskStatus *server_status;
   LoginServers* loginServers;
   Settings* settings;
   QNetworkAccessManager networkAccessManager;
@@ -165,13 +156,8 @@ private:
   QVector<QToolButton*> toolButtons;
   FileScanner* fileScanner;
 
-  protected:
-      //===============================================================
-      // Summary: Overrides the Widget close event
-      //  Allows local processing before the window is allowed to close.
-      //===============================================================
-      void closeEvent(QCloseEvent *event);
-
+protected:
+  void closeEvent(QCloseEvent *event);
 };
 
 #endif // MAINWINDOW_H

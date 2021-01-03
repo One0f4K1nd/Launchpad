@@ -183,7 +183,7 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(closeAction, SIGNAL(triggered()), qApp, SLOT(quit()));
     connect(ui->actionFolders, SIGNAL(triggered()), this, SLOT(showSettings()));
 
-    connect(ui->actionUpdate_Status, SIGNAL(finished(readBasiliskStatus())), this, SLOT(statusXmlIsReady()) );
+    connect(this, SIGNAL(finished()), this, SLOT(statusXmlIsReady()) );
 
     /*connect(&novaNetworkAccessManager, SIGNAL(finished(QNetworkReply*)), this, SLOT(statusXmlIsReady(QNetworkReply*)) );
 
@@ -284,12 +284,6 @@ MainWindow::MainWindow(QWidget *parent) :
     extractFiles();
 }
 
-void MainWindow::readBasiliskStatus()::closeEvent(QCloseEvent *event)
-{
-    emit WidgetClosed();
-    event->accept();
-}
-
 MainWindow::~MainWindow() {
     delete ui;
     ui = NULL;
@@ -370,11 +364,11 @@ void MainWindow::deleteProfiles() {
     }
 }
 
-static size_t write_data(void *ptr, size_t size, size_t nmemb, void *stream)
-{
-    size_t written = fwrite(ptr, size, nmemb, (FILE *)stream);
-    return written;
-}
+//static size_t write_data(void *ptr, size_t size, size_t nmemb, void *stream)
+//{
+//    size_t written = fwrite(ptr, size, nmemb, (FILE *)stream);
+//    return written;
+//}
 //static size_t WriteCallback(void *contents, size_t size, size_t nmemb, void *userp)
 //{
 //    ((std::string*)userp)->append((char*)contents, size * nmemb);
@@ -454,6 +448,8 @@ qDebug() << server_reply;
 
 //transferXMLStatus();
 
+emit finished();
+
 return status;
 }
 
@@ -483,7 +479,7 @@ void MainWindow::updateLoginServerList() {
 }
 
 void MainWindow::updateServerStatus() {
-    //ui->textBrowser->clear();
+    ui->textBrowser->clear();
 
     readBasiliskServerStatus();
     //readNovaServerStatus();
@@ -1278,28 +1274,12 @@ string convertToString(char* a, int size)
 void MainWindow::statusXmlIsReady() {
     qDebug() << "updating server status";
 
-//    if (reply->error() != QNetworkReply::NoError) {
-//        QString errorStr = reply->errorString();
-
-//        QString message;
-//        QTextStream stream(&message);
-
-//        stream << "Error while fetching server status :" << reply->error();
-
-//        if (!errorStr.isEmpty()) {
-//            stream << " " << errorStr;
-//        }
-
     QString received_xml = QString::fromStdString(convertToString(server_reply, sizeof(server_reply)));
-    //ui->textBrowser->setText(received_xml);
     qDebug() << "received_xml : " << received_xml;
-        //return;
-//    }
 
     QXmlSimpleReader xmlReader;
     QXmlInputSource inputSource;
     //set xml data source to file
-//    inputSource.setData(reply->readAll());
     inputSource.setData(received_xml);
 
     StatusXmlContentHandler handler(this);
