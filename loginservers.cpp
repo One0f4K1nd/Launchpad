@@ -7,7 +7,7 @@
 #include "mainwindow.h"
 #include <QSettings>
 
-QString LoginServers::defaultLoginAddress = "login.swgemu.com";
+QString LoginServers::defaultLoginAddress = "https://modthegalaxy.com/index.php";
 quint16 LoginServers::defaultLoginPort = 44453;
 
 LoginServers::LoginServers(QWidget *parent) :

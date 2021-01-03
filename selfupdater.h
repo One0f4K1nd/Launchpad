@@ -18,7 +18,6 @@ public:
 
     int execUpdate();
     void silentCheck();
-
     void closeEvent(QCloseEvent* event);
 
 public slots:

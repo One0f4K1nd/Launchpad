@@ -34,6 +34,7 @@ int SelfUpdater::execUpdate() {
     selfUpdateNetworkManager.get(request);
 
     return exec();
+
 }
 
 void SelfUpdater::silentCheck() {

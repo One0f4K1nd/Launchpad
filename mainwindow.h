@@ -12,6 +12,13 @@
 #include <QSystemTrayIcon>
 #include <QAtomicInt>
 #include <QToolButton>
+#ifdef Q_OS_WIN32
+#include <WinSock2.h>
+#else
+#include <sys/socket.h>
+#endif
+
+#pragma comment(lib,"ws2_32.lib") //Winsock Library
 
 class Settings;
 class LoginServers;
@@ -37,22 +44,35 @@ public:
   static QString gameExecutable;
   static const QString version;
   static QString selfUpdateUrl;  
+  volatile bool modded;
+  WSADATA wsa;
+  struct sockaddr_in server;
+  static SOCKET s;
+  static int status;
+  static char server_reply[2000];
+//  char const *p = "abc";
+  char const *message;
+  static QString received_xml;
 
-public slots:
+
+  public slots:
   void showSettings();
-  void statusXmlIsReady(QNetworkReply*);
+  void statusXmlIsReady();
+  //bool transferXMLStatus(std::string);
   void startSWG();
   void loadFinished();
+  int readBasiliskServerStatus();
 
   void startFullScan(bool forceConfigRestore = false);
+  //void extractFiles();
   static QVector<QPair<QString, qint64> > getRequiredFiles();
   void downloadFinished();
   void downloadFileFinished(QNetworkReply *reply);
-  void readBasiliskServerStatus();
-  void readNovaServerStatus();
+
+  //void readNovaServerStatus();
   void webPageLoadFinished(bool ok);
   void downloadProgress(qint64 bytesReceived, qint64 bytesTotal);
-  void closeEvent(QCloseEvent *event);
+  //void closeEvent(QCloseEvent *event);
 
   void triggerNews();
   void updateBasicLoadProgress(QString successFile);
@@ -75,6 +95,7 @@ public slots:
   void startLoadBasicCheck();
   void showGameModsOptions();
   void showMacroEditor();
+  int extractFiles();
 
   void sslErrors(QNetworkReply* reply, const QList<QSslError>& errors);
 
@@ -87,6 +108,8 @@ public slots:
   void installSWGEmu();
 
   void enableStart();
+
+  static bool copyData(QIODevice &inFile, QIODevice &outFile);
 
   bool decrementFullScanWorkingThreads() {
       return fullScanWorkingThreads.deref();
@@ -103,9 +126,12 @@ public slots:
 signals:
   void startDownload();
   void fileDownloaded(QString);
+//  void transferXMLStatus();
+  void WidgetClosed();
 
 private:
   Ui::MainWindow *ui;
+  //Ui::MainWindow::readBasiliskStatus *server_status;
   LoginServers* loginServers;
   Settings* settings;
   QNetworkAccessManager networkAccessManager;
@@ -138,6 +164,14 @@ private:
 
   QVector<QToolButton*> toolButtons;
   FileScanner* fileScanner;
+
+  protected:
+      //===============================================================
+      // Summary: Overrides the Widget close event
+      //  Allows local processing before the window is allowed to close.
+      //===============================================================
+      void closeEvent(QCloseEvent *event);
+
 };
 
 #endif // MAINWINDOW_H

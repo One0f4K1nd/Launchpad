@@ -23,8 +23,24 @@
 //#include <QWebElement>
 //#include <QWebFrame>
 #include <QNetworkConfiguration>
-
 #include <QSsl>
+#include "zip.h"
+//#include "libzippp.h"
+#include <vector>
+#include <string>
+#include <stdio.h>
+//#include <iostream>
+#include <fstream>
+#include <sstream>
+#include <curl/curl.h>
+#include <curl/easy.h>
+#include "downloader.h"
+
+#ifdef Q_OS_WIN32
+#include <WinSock2.h>
+#else
+#include <sys/socket.h>
+#endif
 
 #if QT_VERSION >= 0x050000
 #include <QtConcurrent/QtConcurrentRun>
@@ -32,27 +48,39 @@
 
 #include "gamemods.h"
 
-//#define ENABLE_MACRO_EDITOR
+#pragma comment(lib,"ws2_32.lib") //Winsock Library
+
+//using namespace libzippp;
+using namespace std;
+
+#define ENABLE_MACRO_EDITOR
 
 //#define ENABLE_NEWS_BUTTON
 
-#define BASILISK_STATUS_XML "https://www.swgemu.com/status/basilisk.xml"
-#define NOVA_STATUS_XML "https://www.swgemu.com/status/nova.xml"
+#define MAIN_SERVER "75.135.159.235"
+#define WEB_PREFIX "https"
 
-QString MainWindow::patchUrl = "http://www.launchpad2.net/SWGEmu/"; // Insert download URL here
-QString MainWindow::newsUrl = "https://www.swgemu.com/forums/forum.php";
+#define BASILISK_STATUS_XML WEB_PREFIX "://" MAIN_SERVER "/supernova_status.xml"
+//#define NOVA_STATUS_XML "https://75.135.159.235/supernova_status.xml"
+
+QString MainWindow::patchUrl = WEB_PREFIX "://" MAIN_SERVER "/SWGEmu/"; // Insert download URL here
+QString MainWindow::newsUrl = "https://modthegalaxy.com/index.php";
 QString MainWindow::gameExecutable = "SWGEmu.exe";
 #ifdef Q_OS_WIN32
-QString MainWindow::selfUpdateUrl = "http://launchpad2.net/setup.cfg"; // Insert update URL here
+QString MainWindow::selfUpdateUrl = WEB_PREFIX "://" MAIN_SERVER "/setup.cfg"; // Insert update URL here
 #else
-QString MainWindow::selfUpdateUrl = "http://launchpad2.net/setuplinux86_64.cfg"; // Insert linux update URL here
+QString MainWindow::selfUpdateUrl = WEB_PREFIX "://" MAIN_SERVER "/setuplinux86_64.cfg"; // Insert linux update URL here
 #endif
 const QString MainWindow::version = "0.24";
+SOCKET MainWindow::s = NULL;
+int MainWindow::status = 0;
+char MainWindow::server_reply[2000];
+QString MainWindow::received_xml = "";
 
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::MainWindow), networkAccessManager(this), clientFilesNetworkAccessManager(this),
-    novaNetworkAccessManager(this), requiredFilesNetworkManager(this), patchesNetworkManager(this),
+    requiredFilesNetworkManager(this), patchesNetworkManager(this),
     fullScanWorkingThreads(0) {
     ui->setupUi(this);
 
@@ -155,13 +183,14 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(closeAction, SIGNAL(triggered()), qApp, SLOT(quit()));
     connect(ui->actionFolders, SIGNAL(triggered()), this, SLOT(showSettings()));
 
-    connect(&networkAccessManager, SIGNAL(finished(QNetworkReply*)), this, SLOT(statusXmlIsReady(QNetworkReply*)) );
-    connect(&novaNetworkAccessManager, SIGNAL(finished(QNetworkReply*)), this, SLOT(statusXmlIsReady(QNetworkReply*)) );
+    connect(ui->actionUpdate_Status, SIGNAL(finished(readBasiliskStatus())), this, SLOT(statusXmlIsReady()) );
+
+    /*connect(&novaNetworkAccessManager, SIGNAL(finished(QNetworkReply*)), this, SLOT(statusXmlIsReady(QNetworkReply*)) );
 
     connect(&networkAccessManager, SIGNAL(sslErrors(QNetworkReply*, const QList<QSslError>&)), this, SLOT(sslErrors(QNetworkReply*, const QList<QSslError>&)) );
-    connect(&novaNetworkAccessManager, SIGNAL(sslErrors(QNetworkReply*, const QList<QSslError>&)), this, SLOT(sslErrors(QNetworkReply*, const QList<QSslError>&)) );
+    connect(&novaNetworkAccessManager, SIGNAL(sslErrors(QNetworkReply*, const QList<QSslError>&)), this, SLOT(sslErrors(QNetworkReply*, const QList<QSslError>&)) );*/
 
-    connect(&clientFilesNetworkAccessManager, SIGNAL(finished(QNetworkReply*)), this, SLOT(downloadFileFinished(QNetworkReply*)));
+        connect(&clientFilesNetworkAccessManager, SIGNAL(finished(QNetworkReply*)), this, SLOT(downloadFileFinished(QNetworkReply*)));
     connect(&requiredFilesNetworkManager, SIGNAL(finished(QNetworkReply*)), this, SLOT(requiredFileDownloadFileFinished(QNetworkReply*)));
     connect(&patchesNetworkManager, SIGNAL(finished(QNetworkReply*)), this, SLOT(patchesDownloadFileFinished(QNetworkReply*)));
 
@@ -208,6 +237,7 @@ MainWindow::MainWindow(QWidget *parent) :
     loginServers->reloadServers();
     updateLoginServerList();
 
+
     silentSelfUpdater = new SelfUpdater(true, this);
 
     if (!swgFolder.isEmpty())
@@ -215,14 +245,20 @@ MainWindow::MainWindow(QWidget *parent) :
     else {
 #ifdef Q_OS_WIN32
         QDir dir("C:/SWGEmu");
+        QDir dir2("E:/Program Files (x86)/SWGEmu/SWGEmu");
 
         if (dir.exists() && FileScanner::checkSwgFolder("C:/SWGEmu")) {
             settingsOptions.setValue("swg_folder", "C:/SWGEmu");
             startLoadBasicCheck();
+        } else if (dir2.exists() && FileScanner::checkSwgFolder("E:/Program Files (x86)/SWGEmu/SWGEmu")) {
+            settingsOptions.setValue("swg_folder", "E:/Program Files (x86)/SWGEmu/SWGEmu");
+            startLoadBasicCheck();
         } else
+
 #endif
-        QMessageBox::warning(this, "Error", "Please set the swgemu folder in Settings->Options or install using Settings->Install From SWG option");
+            QMessageBox::warning(this, "Error", "Please set the swgemu folder in Settings->Options or install using Settings->Install From SWG option");
     }
+
 
     restoreGeometry(settingsOptions.value("mainWindowGeometry").toByteArray());
     restoreState(settingsOptions.value("mainWindowState").toByteArray());
@@ -238,7 +274,20 @@ MainWindow::MainWindow(QWidget *parent) :
     }
 
     requiredFilesNetworkManager.get(QNetworkRequest(QUrl(patchUrl + "required2.txt")));
-    silentSelfUpdater->silentCheck();
+    if (modded) {
+        //we are already modded do not update
+    } else {
+        silentSelfUpdater->silentCheck();
+    }
+
+
+    extractFiles();
+}
+
+void MainWindow::readBasiliskStatus()::closeEvent(QCloseEvent *event)
+{
+    emit WidgetClosed();
+    event->accept();
 }
 
 MainWindow::~MainWindow() {
@@ -258,12 +307,12 @@ MainWindow::~MainWindow() {
         delete process;
     }
 
-    #ifdef Q_OS_WIN32
+#ifdef Q_OS_WIN32
     if (GameProcess::debugMonitor) {
         delete GameProcess::debugMonitor;
         GameProcess::debugMonitor = NULL;
     }
-    #endif
+#endif
 
     silentSelfUpdater = NULL;
 }
@@ -321,26 +370,91 @@ void MainWindow::deleteProfiles() {
     }
 }
 
-void MainWindow::readBasiliskServerStatus() {
-    QNetworkRequest request = QNetworkRequest(QUrl(BASILISK_STATUS_XML));
+static size_t write_data(void *ptr, size_t size, size_t nmemb, void *stream)
+{
+    size_t written = fwrite(ptr, size, nmemb, (FILE *)stream);
+    return written;
+}
+//static size_t WriteCallback(void *contents, size_t size, size_t nmemb, void *userp)
+//{
+//    ((std::string*)userp)->append((char*)contents, size * nmemb);
+//    return size * nmemb;
+//}
+
+int MainWindow::readBasiliskServerStatus() {
+    //QNetworkRequest request = QNetworkRequest(QUrl(BASILISK_STATUS_XML));
 
     /*QSslConfiguration ssl = request.sslConfiguration();
     ssl.setSslOption(QSsl::SslOptionDisableServerNameIndication, true);
-
     request.setSslConfiguration(ssl);*/
 
-    networkAccessManager.get(request);
+    //networkAccessManager.get(request);
+
+int recv_size;
+
+qDebug() << "\nInitialising Winsock...";
+
+if (WSAStartup(MAKEWORD(2,2),&wsa) != 0)
+{
+    qDebug() << "Failed.";
+    exit;
 }
 
-void MainWindow::readNovaServerStatus() {
-    QNetworkRequest request = QNetworkRequest(QUrl(NOVA_STATUS_XML));
+qDebug() << "Initialised.\n";
 
-    /*QSslConfiguration ssl = request.sslConfiguration();
-    ssl.setSslOption(QSsl::SslOptionDisableServerNameIndication, true);
+//Create a socket
+if((s = socket(AF_INET , SOCK_STREAM , 0 )) == INVALID_SOCKET)
+{
+    qDebug() << "Could not create socket : " << WSAGetLastError();
+}
 
-    request.setSslConfiguration(ssl);*/
+qDebug() << "Socket created.\n";
 
-    novaNetworkAccessManager.get(request);
+
+server.sin_addr.s_addr = inet_addr("192.168.0.116");
+server.sin_family = AF_INET;
+server.sin_port = htons( 44455 );
+
+//Connect to remote server
+//try to connect...
+
+
+status = ::connect(s , (struct sockaddr *)&server , sizeof(server));
+
+if(status < 0)
+{
+    qDebug() << "connect error";
+    exit;
+}
+
+qDebug() << "Connected";
+
+//Send some data
+message = "GET / HTTP/1.1\r\n\r\n";
+if( send(s , message , strlen(message) , 0) < 0)
+{
+    qDebug() << "Send failed";
+    exit;
+}
+qDebug() << "Data Send\n";
+
+//Receive a reply from the server
+if((recv_size = recv(s , server_reply , 2000 , 0)) == SOCKET_ERROR)
+{
+    qDebug() << "recv failed";
+}
+
+qDebug() << "Reply received\n";
+
+//Add a NULL terminating character to make it a proper string before printing
+server_reply[recv_size] = '\0';
+qDebug() << server_reply;
+
+//ui->textBrowser->setText(QString::fromUtf8(server_reply));
+
+//transferXMLStatus();
+
+return status;
 }
 
 void MainWindow::checkForUpdates() {
@@ -369,10 +483,10 @@ void MainWindow::updateLoginServerList() {
 }
 
 void MainWindow::updateServerStatus() {
-    ui->textBrowser->clear();
+    //ui->textBrowser->clear();
 
     readBasiliskServerStatus();
-    readNovaServerStatus();
+    //readNovaServerStatus();
 }
 
 void MainWindow::triggerMultipleInstances(bool newValue) {
@@ -384,7 +498,12 @@ void MainWindow::triggerNews() {
 #ifdef ENABLE_NEWS_BUTTON
     if (ui->groupBox_browser->isHidden()) {
         ui->statusBar->showMessage("Loading page...");
-        ui->webView->setUrl(newsUrl);
+        //view.setUrl(newsUrl);
+        //view.resize(1024, 750);
+        //view.show();
+
+        //return app.exec();
+        //ui->view->setUrl(newsUrl);
 
         if (!isMaximized()) {
             QDesktopWidget* mydesk = QApplication::desktop();
@@ -422,16 +541,16 @@ QFile* MainWindow::getRequiredFilesFile() {
     QFile* file = NULL;
 
     //if (QDir(folder).exists()) {
-        file = new QFile("required2.txt");
+    file = new QFile("required2.txt");
 
-        if (file->exists()) {
-            if (file->open(QIODevice::ReadOnly | QIODevice::Text)) {
-                return file;
-            } else
-                delete file;
-        } else {
+    if (file->exists()) {
+        if (file->open(QIODevice::ReadOnly | QIODevice::Text)) {
+            return file;
+        } else
             delete file;
-        }
+    } else {
+        delete file;
+    }
     //}
 
     file = new QFile(":/files/required2.txt");
@@ -446,9 +565,9 @@ void MainWindow::addFileToDownloadSlot(QString file) {
 
 void MainWindow::showAboutDialog() {
     QMessageBox::about(this, "SWGemu", "SWGEmu Launchpad version " + version + "\n\nThis program is distributed in the hope that it will be useful,"
-                       " but WITHOUT ANY WARRANTY; without even the implied warranty of"
-                       " MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the"
-                       " GNU General Public License for more details.");
+                                                                               " but WITHOUT ANY WARRANTY; without even the implied warranty of"
+                                                                               " MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the"
+                                                                               " GNU General Public License for more details.");
 }
 
 void MainWindow::requiredFileDownloadFileFinished(QNetworkReply* reply) {
@@ -461,20 +580,20 @@ void MainWindow::requiredFileDownloadFileFinished(QNetworkReply* reply) {
     QString data = reply->readAll();
 
     QSettings settings;
-   // QString folder = settings.value("swg_folder").toString();
+    // QString folder = settings.value("swg_folder").toString();
 
-   // if (QDir(folder).exists()) {
-        QFile file("required2.txt");
+    // if (QDir(folder).exists()) {
+    QFile file("required2.txt");
 
-        if (file.open(QIODevice::WriteOnly | QIODevice::Text)) {
-            QTextStream stream(&file);
+    if (file.open(QIODevice::WriteOnly | QIODevice::Text)) {
+        QTextStream stream(&file);
 
-            stream << data;
+        stream << data;
 
-            file.close();
+        file.close();
 
-            return;
-        }
+        return;
+    }
     //}
 
     startLoadBasicCheck();
@@ -619,7 +738,7 @@ void MainWindow::startFullScan(bool forceConfigRestore) {
         //filesToDownload.append(patchUrl + "Emu_opt.cfg");
         filesToDownload.append(patchUrl + "swgemu_machineoptions.iff");
         filesToDownload.append(patchUrl + "options.cfg");
-        //filesToDownload.append(patchUrl + "user.cfg");
+        filesToDownload.append(patchUrl + "user.cfg");
     }
 
     bool multiThreaded = settings.value("multi_threaded_full_scan", false).toBool();
@@ -636,6 +755,7 @@ void MainWindow::startFullScan(bool forceConfigRestore) {
         fullScanWatcher.setFuture(future);
     }
 }
+
 
 void MainWindow::startLoadBasicCheck() {
     if (runningFullScan)
@@ -826,11 +946,11 @@ void MainWindow::downloadProgress(qint64 bytesReceived, qint64 bytesTotal) {
 }
 
 void MainWindow::startKodanCalculator() {
-    #ifdef Q_OS_WIN32
+#ifdef Q_OS_WIN32
     if (!QProcess::startDetached("KSWGProfCalcEditor.exe", QStringList(), QDir::currentPath())) {
         QMessageBox::warning(this, "ERROR", "Could not launch profession calculator!");
     }
-    #else
+#else
     QSettings settings;
     QString wineBinary = settings.value("wine_binary").toString();
 
@@ -850,7 +970,7 @@ void MainWindow::startKodanCalculator() {
     if (!QProcess::startDetached(wineBinary, argsList, QDir::currentPath())) {
         QMessageBox::warning(this, "ERROR", "Could not launch game settings!");
     }
-    #endif
+#endif
 }
 
 void MainWindow::startSWGSetup() {
@@ -949,7 +1069,7 @@ QVector<QPair<QString, qint64> > MainWindow::getRequiredFiles() {
     QVector<QPair<QString, qint64> > data;
 
     //if (QDir(folder).exists()) {
-     {
+    {
         QFile file("required2.txt");
 
         if (file.exists()) {
@@ -1143,28 +1263,44 @@ void MainWindow::sslErrors(QNetworkReply* , const QList<QSslError> &errors) {
     }
 }
 
-void MainWindow::statusXmlIsReady(QNetworkReply* reply) {
+// converts character array
+// to string and returns it
+string convertToString(char* a, int size)
+{
+    int i;
+    string s = "";
+    for (i = 0; i < size; i++) {
+        s = s + a[i];
+    }
+    return s;
+}
+
+void MainWindow::statusXmlIsReady() {
     qDebug() << "updating server status";
 
-    if (reply->error() != QNetworkReply::NoError) {        
-        QString errorStr = reply->errorString();
+//    if (reply->error() != QNetworkReply::NoError) {
+//        QString errorStr = reply->errorString();
 
-        QString message;
-        QTextStream stream(&message);
+//        QString message;
+//        QTextStream stream(&message);
 
-        stream << "Error while fetching server status :" << reply->error();
+//        stream << "Error while fetching server status :" << reply->error();
 
-        if (!errorStr.isEmpty()) {
-            stream << " " << errorStr;
-        }
+//        if (!errorStr.isEmpty()) {
+//            stream << " " << errorStr;
+//        }
 
-        ui->textBrowser->setText(message);
-        return;
-    }
+    QString received_xml = QString::fromStdString(convertToString(server_reply, sizeof(server_reply)));
+    //ui->textBrowser->setText(received_xml);
+    qDebug() << "received_xml : " << received_xml;
+        //return;
+//    }
 
     QXmlSimpleReader xmlReader;
     QXmlInputSource inputSource;
-    inputSource.setData(reply->readAll());
+    //set xml data source to file
+//    inputSource.setData(reply->readAll());
+    inputSource.setData(received_xml);
 
     StatusXmlContentHandler handler(this);
     xmlReader.setContentHandler(&handler);
@@ -1212,6 +1348,18 @@ void MainWindow::statusXmlIsReady(QNetworkReply* reply) {
     ui->textBrowser->insertHtml(labelText);
 }
 
+//bool MainWindow::transferXMLStatus(std::string file_contents)
+//{
+
+//    //convert to necessary format in memory to display in status window
+//    if (file_contents.size() == 0){
+//        return false;
+//    } else {
+//        ui->textBrowser->setText(QString::fromUtf8(file_contents.c_str()));
+//        return true;
+//    }
+//}
+
 void MainWindow::webPageLoadFinished(bool ok) {
     if (!ok) {
         ui->statusBar->showMessage("Error loading swgemu.com");
@@ -1223,14 +1371,14 @@ void MainWindow::webPageLoadFinished(bool ok) {
 
 void MainWindow::updateDonationMeter() {
 #ifdef ENABLE_NEWS_BUTTON
-    QWebElement e = ui->webView->page()->mainFrame()->findFirstElement("span#ds_bar_67_percentText");
+    /*QWebElement e = ui->webView->page()->mainFrame()->findFirstElement("span#ds_bar_67_percentText");
 
     QString value = e.toPlainText();
     QString num = value.mid(0, value.indexOf("%"));
 
     ui->donationBar->setValue(num.toInt());
 
-    ui->label_current_work->setText("Donation meter loaded.");
+    ui->label_current_work->setText("Donation meter loaded.");*/
 #endif
 }
 
@@ -1304,6 +1452,8 @@ void MainWindow::installSWGEmu() {
         settings->restoreFolder();
 
         startFullScan(true);
+
+        //        extractFiles();
     }
 }
 
@@ -1312,8 +1462,78 @@ void MainWindow::showGameModsOptions() {
     dialog.exec();
 }
 
+int MainWindow::extractFiles() {
+
+    QString qs;
+    int status;
+
+    //Open the ZIP archive
+    int err = 0;
+    zip *z = zip_open("mtgcfg.zip", ZIP_RDONLY, &err);
+
+    zip_int64_t num_entries = zip_get_num_entries(z, ZIP_FL_UNCHANGED);
+
+    for (zip_uint64_t i = 0; i < (zip_uint64_t)num_entries; i++) {
+        const char *name = zip_get_name(z, i, 0);
+
+        struct zip_stat st;
+        zip_stat_init(&st);
+        zip_stat(z, name, 0, &st);
+
+        //Alloc memory for its uncompressed contents
+        char *contents = new char[st.size];
+
+        //Read the compressed file
+        zip_file *f = zip_fopen(z, name, 0);
+        zip_fread(f, contents, st.size);
+
+        if(!ofstream(name, std::ios::binary).write(contents, st.size))
+        {
+            qs = "Error writing  " + QString(name) + " file.";
+            qDebug() << qs;
+            status = EXIT_FAILURE;
+        } else {
+            qs = "Success writing " + QString(name) + " file.";
+            qDebug() << qs;
+            status = EXIT_SUCCESS;
+        }
+
+        zip_fclose(f);
+        ui->label_current_work->setText(qs);
+
+    }
+
+
+    //And close the archive
+    zip_close(z);
+
+    qs = "patchURL = " + patchUrl;
+    qDebug() << qs;
+    qs = "statusXML = " BASILISK_STATUS_XML;
+    qDebug() << qs;
+    qs = "newsUrl = " + newsUrl;
+    qDebug() << qs;
+    qs = "selfUpdateUrl = " + selfUpdateUrl;
+    qDebug() << qs;
+
+    return status;
+
+}
+
 void MainWindow::showMacroEditor() {
     MacroEditor dialog(this);
     dialog.exec();
 }
 
+bool MainWindow::copyData(QIODevice &inFile, QIODevice &outFile)
+{
+    while (!inFile.atEnd()) {
+        char buf[4096];
+        qint64 readLen = inFile.read(buf, 4096);
+        if (readLen <= 0)
+            return false;
+        if (outFile.write(buf, readLen) != readLen)
+            return false;
+    }
+    return true;
+}

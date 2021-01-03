@@ -4,7 +4,7 @@
 #
 #-------------------------------------------------
 
-QT  += core gui network xml
+QT  += core gui network xml webenginewidgets
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
@@ -13,6 +13,8 @@ TEMPLATE = app
 
 
 SOURCES += main.cpp\
+    TCPSocketOnly.cpp \
+    downloader.cpp \
         mainwindow.cpp \
     settings.cpp \
     statusxmlcontenthandler.cpp \
@@ -32,6 +34,7 @@ SOURCES += main.cpp\
     macroitemrect.cpp
 
 HEADERS  += mainwindow.h \
+    downloader.h \
     settings.h \
     statusxmlcontenthandler.h \
     loginservers.h \
@@ -49,7 +52,10 @@ HEADERS  += mainwindow.h \
     macroiconsgraphicsview.h \
     editmacro.h \
     gamemacro.h \
-    macroitemrect.h
+    macroitemrect.h \
+    zip.h \
+    zipconf.h \
+    zlib.h
 
 FORMS    += mainwindow.ui \
     settings.ui \
@@ -64,6 +70,7 @@ FORMS    += mainwindow.ui \
 
 OTHER_FILES += \
     logo_yellow.png \
+    tactical.png \
     emu.rc \
     LICENSE.txt \
     swgemu.svg \
@@ -73,12 +80,16 @@ OTHER_FILES += \
     cogs.svg \
     required2.txt \
     required.txt \
-    info.svg
+    info.svg \
+    mtgcfg.zip \
+    mtgtre.zip
 
 RESOURCES += \
     rsources.qrc
 
 win32 {
+    win32-msvc:LIBS += Ws2_32.Lib Wldap32.Lib Crypt32.Lib
+
     SOURCES += windebugmonitor.cpp
     HEADERS += windebugmonitor.h
     CONFIG += embed_manifest_exe
@@ -87,3 +98,33 @@ win32 {
 
 
 RC_FILE = emu.rc
+
+DISTFILES += \
+    mtgcfg.zip \
+    mtgtre.zip \
+    tactical.png \
+    zip.dll \
+    zip.lib \
+    zlibd.lib \
+    zlibstaticd.lib
+
+LIBS += -L$$PWD/./ -lzip
+
+##pragma comment(lib, "Ws2_32.Lib")
+##pragma comment(lib, "Wldap32.Lib")
+##pragma comment(lib, "Crypt32.Lib")
+
+INCLUDEPATH += "D:/git/curl/builds/libcurl-vc14-x86-release-static-ipv6/include"
+LIBS += -L"D:/git/curl/builds/libcurl-vc14-x86-release-static-ipv6/lib" -llibcurl_a
+DEFINES += CURL_STATICLIB
+
+# using shell_path() to correct path depending on platform
+# escaping quotes and backslashes for file paths
+copyzip.commands = $(COPY_FILE) \"$$shell_path($$PWD\\mtgcfg.zip)\" \"$$shell_path($$OUT_PWD)\"
+first.depends = $(first) copyzip
+copydll.commands = $(COPY_FILE) \"$$shell_path($$PWD\\zip.dll)\" \"$$shell_path($$OUT_PWD)\"
+copyzip.depends += copydll
+export(first.depends)
+export(copyzip.commands)
+export(copydll.commands)
+QMAKE_EXTRA_TARGETS += first copyzip copydll

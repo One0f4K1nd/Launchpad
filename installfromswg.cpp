@@ -148,7 +148,7 @@ int InstallFromSWG::installFiles() {
     }
 
     //qDebug() << emuFolder;
-    emuFolder = emuFolder + "/SWGEmu/";
+    emuFolder = emuFolder + "/SWGMTGEmu/";
 
     if (QDir(emuFolder).exists()) {
         if (QMessageBox::question(this, "Warning", "SWGEmu folder already exists, do you want to overwrite?") != QMessageBox::Yes)
