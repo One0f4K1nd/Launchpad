@@ -456,7 +456,7 @@
    <enum>Qt::NoContextMenu</enum>
   </property>
   <property name="windowTitle">
-   <string>SWGEmu Launchpad</string>
+   <string>SWGMTGEmu Launchpad</string>
   </property>
   <property name="statusTip">
    <string>This launcher application is a modified version of SWGEmu made to work with Mod The Galaxy's Tre Files and server.</string>
@@ -1205,7 +1205,7 @@
                   <string/>
                  </property>
                  <property name="pixmap">
-                  <pixmap resource="rsources.qrc">:/img/mtg_logo.png</pixmap>
+                  <pixmap resource="rsources.qrc">:/img/ModTheGalaxy_Logo.jpg</pixmap>
                  </property>
                  <property name="alignment">
                   <set>Qt::AlignCenter</set>

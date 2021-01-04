@@ -58,7 +58,7 @@
      <item>
       <widget class="QLabel" name="label">
        <property name="text">
-        <string>SWGEmu Folder</string>
+        <string>SWGMTGEmu Folder</string>
        </property>
       </widget>
      </item>

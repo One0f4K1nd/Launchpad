@@ -24,19 +24,14 @@
         <file>ui_rebel_icons.dds</file>
         <file>book.svg</file>
         <file>ui_rebel_icons.png</file>
-        <file>mtg_logo.png</file>
+        <file>ModTheGalaxy_Logo.jpg</file>
     </qresource>
     <qresource prefix="/files">
         <file>required2.txt</file>
         <file>required.txt</file>
         <file>shared_base_player.iff</file>
         <file>icons.xml</file>
-        <file>mtgcfg.zip</file>
-        <file>mtgtre.zip</file>
-        <file>zip.lib</file>
-        <file>zlibd.lib</file>
-        <file>zlibstaticd.lib</file>
-        <file>zip.dll</file>
+        <file>required3.txt</file>
     </qresource>
     <qresource prefix="/"/>
 </RCC>

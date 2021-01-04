@@ -24,16 +24,13 @@
 //#include <QWebFrame>
 #include <QNetworkConfiguration>
 #include <QSsl>
-#include "zip.h"
-//#include "libzippp.h"
 #include <vector>
 #include <string>
 #include <stdio.h>
-//#include <iostream>
 #include <fstream>
 #include <sstream>
-#include <curl/curl.h>
-#include <curl/easy.h>
+//#include </.h>
+//#include <curl/easy.h>
 #include "downloader.h"
 
 #ifdef Q_OS_WIN32
@@ -50,20 +47,19 @@
 
 #pragma comment(lib,"ws2_32.lib") //Winsock Library
 
-//using namespace libzippp;
 using namespace std;
 
 #define ENABLE_MACRO_EDITOR
 
 //#define ENABLE_NEWS_BUTTON
 
-#define MAIN_SERVER "75.135.159.235"
-#define WEB_PREFIX "https"
+#define MAIN_SERVER "192.168.0.116"
+#define WEB_PREFIX "http"
 
-#define BASILISK_STATUS_XML WEB_PREFIX "://" MAIN_SERVER "/supernova_status.xml"
-//#define NOVA_STATUS_XML "https://75.135.159.235/supernova_status.xml"
+#define BASILISK_STATUS_XML WEB_PREFIX "://" MAIN_SERVER "/supernova_status.xml" // i did not disable this yet
+//#define NOVA_STATUS_XML "https://192.168.0.116/supernova_status.xml"
 
-QString MainWindow::patchUrl = WEB_PREFIX "://" MAIN_SERVER "/SWGEmu/"; // Insert download URL here
+QString MainWindow::patchUrl = WEB_PREFIX "://" MAIN_SERVER "/tre/"; // Insert download URL here
 QString MainWindow::newsUrl = "https://modthegalaxy.com/index.php";
 QString MainWindow::gameExecutable = "SWGEmu.exe";
 #ifdef Q_OS_WIN32
@@ -75,7 +71,6 @@ const QString MainWindow::version = "0.24";
 SOCKET MainWindow::s = NULL;
 int MainWindow::status = 0;
 char MainWindow::server_reply[2000];
-QString MainWindow::received_xml = "";
 
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
@@ -84,9 +79,9 @@ MainWindow::MainWindow(QWidget *parent) :
     fullScanWorkingThreads(0) {
     ui->setupUi(this);
 
-    QCoreApplication::setOrganizationName("SWGEmu");
-    QCoreApplication::setOrganizationDomain("swgemu.com");
-    QCoreApplication::setApplicationName("Launchpad");
+    QCoreApplication::setOrganizationName("SWGMTGEmu");
+    QCoreApplication::setOrganizationDomain("modthegalaxy.com");
+    QCoreApplication::setApplicationName("SWGEMU MTG Launchpad");
 
     requiredFilesCount = 0;
     nextFileToDownload = 0;
@@ -192,6 +187,7 @@ MainWindow::MainWindow(QWidget *parent) :
 
         connect(&clientFilesNetworkAccessManager, SIGNAL(finished(QNetworkReply*)), this, SLOT(downloadFileFinished(QNetworkReply*)));
     connect(&requiredFilesNetworkManager, SIGNAL(finished(QNetworkReply*)), this, SLOT(requiredFileDownloadFileFinished(QNetworkReply*)));
+    connect(&newrequiredFilesNetworkManager, SIGNAL(finished(QNetworkReply*)), this, SLOT(newrequiredFileDownloadFileFinished(QNetworkReply*)));
     connect(&patchesNetworkManager, SIGNAL(finished(QNetworkReply*)), this, SLOT(patchesDownloadFileFinished(QNetworkReply*)));
 
     //connect(ui->webView, SIGNAL(loadFinished(bool)), this, SLOT(webPageLoadFinished(bool)));
@@ -240,20 +236,16 @@ MainWindow::MainWindow(QWidget *parent) :
 
     silentSelfUpdater = new SelfUpdater(true, this);
 
-    if (!swgFolder.isEmpty())
+    if (!swgFolder.isEmpty()) {
         startLoadBasicCheck();
-    else {
+    } else {
 #ifdef Q_OS_WIN32
         QDir dir("C:/SWGEmu");
-        QDir dir2("E:/Program Files (x86)/SWGEmu/SWGEmu");
-
+//E:/Program Files (x86)/SWGEmu/SWGEmu
         if (dir.exists() && FileScanner::checkSwgFolder("C:/SWGEmu")) {
             settingsOptions.setValue("swg_folder", "C:/SWGEmu");
             startLoadBasicCheck();
-        } else if (dir2.exists() && FileScanner::checkSwgFolder("E:/Program Files (x86)/SWGEmu/SWGEmu")) {
-            settingsOptions.setValue("swg_folder", "E:/Program Files (x86)/SWGEmu/SWGEmu");
-            startLoadBasicCheck();
-        } else
+        }  else
 
 #endif
             QMessageBox::warning(this, "Error", "Please set the swgemu folder in Settings->Options or install using Settings->Install From SWG option");
@@ -274,14 +266,8 @@ MainWindow::MainWindow(QWidget *parent) :
     }
 
     requiredFilesNetworkManager.get(QNetworkRequest(QUrl(patchUrl + "required2.txt")));
-    if (modded) {
-        //we are already modded do not update
-    } else {
-        silentSelfUpdater->silentCheck();
-    }
+    silentSelfUpdater->silentCheck();
 
-
-    extractFiles();
 }
 
 MainWindow::~MainWindow() {
@@ -530,6 +516,31 @@ void MainWindow::triggerNews() {
 #endif
 }
 
+QFile* MainWindow::getNewRequiredFilesFile() {
+    QSettings settings;
+    //QString folder = settings.value("swg_folder").toString();
+
+    QFile* file = NULL;
+
+    //if (QDir(folder).exists()) {
+    file = new QFile("required3.txt");
+
+    if (file->exists()) {
+        if (file->open(QIODevice::ReadOnly | QIODevice::Text)) {
+            return file;
+        } else
+            delete file;
+    } else {
+        delete file;
+    }
+    //}
+
+    file = new QFile(":/files/required3.txt");
+    file->open(QIODevice::ReadOnly | QIODevice::Text);
+
+    return file;
+}
+
 QFile* MainWindow::getRequiredFilesFile() {
     QSettings settings;
     //QString folder = settings.value("swg_folder").toString();
@@ -580,6 +591,35 @@ void MainWindow::requiredFileDownloadFileFinished(QNetworkReply* reply) {
 
     // if (QDir(folder).exists()) {
     QFile file("required2.txt");
+
+    if (file.open(QIODevice::WriteOnly | QIODevice::Text)) {
+        QTextStream stream(&file);
+
+        stream << data;
+
+        file.close();
+
+        return;
+    }
+    //}
+
+    startLoadBasicCheck();
+}
+
+void MainWindow::newrequiredFileDownloadFileFinished(QNetworkReply* reply) {
+    if (reply && reply->error() != QNetworkReply::NoError) {
+        return;
+    }
+
+    qDebug() << "got required3.txt";
+
+    QString data = reply->readAll();
+
+    QSettings settings;
+    // QString folder = settings.value("swg_folder").toString();
+
+    // if (QDir(folder).exists()) {
+    QFile file("required3.txt");
 
     if (file.open(QIODevice::WriteOnly | QIODevice::Text)) {
         QTextStream stream(&file);
@@ -748,6 +788,19 @@ void MainWindow::startFullScan(bool forceConfigRestore) {
         runningFullScan = true;
 
         QFuture<int> future = QtConcurrent::run(fileScanner, &FileScanner::fullScanSingleThreaded, restoreConfigFiles);
+        fullScanWatcher.setFuture(future);
+    }
+
+    //mod the galaxy required3 scans
+    if (multiThreaded) {
+        fullScanWorkingThreads = getRequiredFiles().size();
+
+        runningFullScan = true;
+        QtConcurrent::run(fileScanner, &FileScanner::newScanMultiThreaded, restoreConfigFiles);
+    } else {
+        runningFullScan = true;
+
+        QFuture<int> future = QtConcurrent::run(fileScanner, &FileScanner::newScanSingleThreaded, restoreConfigFiles);
         fullScanWatcher.setFuture(future);
     }
 }
@@ -1274,13 +1327,13 @@ string convertToString(char* a, int size)
 void MainWindow::statusXmlIsReady() {
     qDebug() << "updating server status";
 
-    QString received_xml = QString::fromStdString(convertToString(server_reply, sizeof(server_reply)));
-    qDebug() << "received_xml : " << received_xml;
+    MainWindow::received_xml = QString::fromStdString(convertToString(server_reply, sizeof(server_reply)));
+    qDebug() << "received_xml : " << MainWindow::received_xml;
 
     QXmlSimpleReader xmlReader;
     QXmlInputSource inputSource;
     //set xml data source to file
-    inputSource.setData(received_xml);
+    inputSource.setData(MainWindow::received_xml);
 
     StatusXmlContentHandler handler(this);
     xmlReader.setContentHandler(&handler);
@@ -1324,42 +1377,29 @@ void MainWindow::statusXmlIsReady() {
     QDateTime timestamp;
     timestamp.setTime_t(values->value("timestamp").toULong());
     stream << "<div align=\"center\">Last updated: " << timestamp.toString(Qt::SystemLocaleShortDate) << "</div><br><br>";
-
     ui->textBrowser->insertHtml(labelText);
 }
 
-//bool MainWindow::transferXMLStatus(std::string file_contents)
-//{
-
-//    //convert to necessary format in memory to display in status window
-//    if (file_contents.size() == 0){
-//        return false;
-//    } else {
-//        ui->textBrowser->setText(QString::fromUtf8(file_contents.c_str()));
-//        return true;
-//    }
-//}
-
 void MainWindow::webPageLoadFinished(bool ok) {
     if (!ok) {
-        ui->statusBar->showMessage("Error loading swgemu.com");
+        ui->statusBar->showMessage("Error loading 192.168.0.116");
         return;
     }
 
-    ui->statusBar->showMessage("swgemu.com loaded.");
+    ui->statusBar->showMessage("192.168.0.116 loaded.");
 }
 
 void MainWindow::updateDonationMeter() {
-#ifdef ENABLE_NEWS_BUTTON
-    /*QWebElement e = ui->webView->page()->mainFrame()->findFirstElement("span#ds_bar_67_percentText");
+//#ifdef ENABLE_NEWS_BUTTON
+//    QWebElement e = ui->webView->page()->mainFrame()->findFirstElement("span#ds_bar_67_percentText");
 
-    QString value = e.toPlainText();
-    QString num = value.mid(0, value.indexOf("%"));
+//    QString value = e.toPlainText();
+//    QString num = value.mid(0, value.indexOf("%"));
 
-    ui->donationBar->setValue(num.toInt());
+//    ui->donationBar->setValue(num.toInt());
 
-    ui->label_current_work->setText("Donation meter loaded.");*/
-#endif
+//    ui->label_current_work->setText("Donation meter loaded.");
+//#endif
 }
 
 void MainWindow::closeEvent(QCloseEvent *event) {
@@ -1440,64 +1480,6 @@ void MainWindow::installSWGEmu() {
 void MainWindow::showGameModsOptions() {
     GameMods dialog(this);
     dialog.exec();
-}
-
-int MainWindow::extractFiles() {
-
-    QString qs;
-    int status;
-
-    //Open the ZIP archive
-    int err = 0;
-    zip *z = zip_open("mtgcfg.zip", ZIP_RDONLY, &err);
-
-    zip_int64_t num_entries = zip_get_num_entries(z, ZIP_FL_UNCHANGED);
-
-    for (zip_uint64_t i = 0; i < (zip_uint64_t)num_entries; i++) {
-        const char *name = zip_get_name(z, i, 0);
-
-        struct zip_stat st;
-        zip_stat_init(&st);
-        zip_stat(z, name, 0, &st);
-
-        //Alloc memory for its uncompressed contents
-        char *contents = new char[st.size];
-
-        //Read the compressed file
-        zip_file *f = zip_fopen(z, name, 0);
-        zip_fread(f, contents, st.size);
-
-        if(!ofstream(name, std::ios::binary).write(contents, st.size))
-        {
-            qs = "Error writing  " + QString(name) + " file.";
-            qDebug() << qs;
-            status = EXIT_FAILURE;
-        } else {
-            qs = "Success writing " + QString(name) + " file.";
-            qDebug() << qs;
-            status = EXIT_SUCCESS;
-        }
-
-        zip_fclose(f);
-        ui->label_current_work->setText(qs);
-
-    }
-
-
-    //And close the archive
-    zip_close(z);
-
-    qs = "patchURL = " + patchUrl;
-    qDebug() << qs;
-    qs = "statusXML = " BASILISK_STATUS_XML;
-    qDebug() << qs;
-    qs = "newsUrl = " + newsUrl;
-    qDebug() << qs;
-    qs = "selfUpdateUrl = " + selfUpdateUrl;
-    qDebug() << qs;
-
-    return status;
-
 }
 
 void MainWindow::showMacroEditor() {

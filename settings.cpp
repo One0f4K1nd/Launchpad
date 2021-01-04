@@ -11,6 +11,7 @@ Settings::Settings(QWidget *parent) :
 
     QSettings settings;
 
+    //controls folder
     ui->lineEdit_swgfolder->setText(settings.value("swg_folder").toString());
     ui->checkBox_close->setChecked(settings.value("close_after_start", false).toBool());
     ui->checkBox_minimize->setChecked(settings.value("minimize_after_start", false).toBool());

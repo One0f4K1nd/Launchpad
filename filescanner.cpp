@@ -102,6 +102,30 @@ void FileScanner::fullScanMultiThreaded(bool ) {
     delete file;
 }
 
+void FileScanner::newScanMultiThreaded(bool ) {
+    QFile* file = mainWindow->getNewRequiredFilesFile();
+
+    QSettings settings;
+    QString swgFolder = settings.value("swg_folder").toString();
+
+    while (!file->atEnd()) {
+        QByteArray line = file->readLine();
+
+        //QRegExp rx("(\\ |\\,|\\.|\\;|\\t)"); //RegEx for ' ' or ',' or '.' or ':' or '\t'
+        QList<QByteArray> query = line.split(';');
+
+        QString name = query.at(0);
+        QString size = query.at(1);
+        QString md5 = query.at(2).trimmed();
+
+        QString fullFile = swgFolder + "/" + name;
+
+        QtConcurrent::run(this, &FileScanner::fullScanFile, fullFile, name, size.toLongLong(), md5);
+    }
+
+    delete file;
+}
+
 void FileScanner::fullScanFile(const QString& file, const QString& name, qint64, const QString &md5) {
     QFile fileObject(file);
 
@@ -224,3 +248,74 @@ int FileScanner::fullScanSingleThreaded(bool ) {
     return res;
 }
 
+int FileScanner::newScanSingleThreaded(bool ) {
+    QFile* file = mainWindow->getNewRequiredFilesFile();
+
+    QSettings settings;
+    QString swgFolder = settings.value("swg_folder").toString();
+
+    int res = 0;
+
+    while (!file->atEnd()) {
+        QByteArray line = file->readLine();
+
+        //QRegExp rx("(\\ |\\,|\\.|\\;|\\t)"); //RegEx for ' ' or ',' or '.' or ':' or '\t'
+        QList<QByteArray> query = line.split(';');
+
+        QString name = query.at(0);
+        QString size = query.at(1);
+        QString md5 = query.at(2).trimmed();
+
+        QString file = swgFolder + "/" + name;
+
+        QFile fileObject(file);
+
+        if (!fileObject.exists()) {
+            qDebug() << file << "doesnt exist";
+
+            mainWindow->appendToFilesToDownloadStringList(MainWindow::patchUrl + name);
+
+            if (!mainWindow->doCancelWorkingThreads())
+                emit fullScannedFile(name, false);
+
+            continue;
+        }
+
+        QCryptographicHash crypto(QCryptographicHash::Md5);
+        if (!fileObject.open(QFile::ReadOnly)) {
+            qDebug() << "could not open file:" << file;
+
+            mainWindow->appendToFilesToDownloadStringList(MainWindow::patchUrl + name);
+
+            if (!mainWindow->doCancelWorkingThreads())
+                emit fullScannedFile(name, false);
+
+            continue;
+        }
+
+        while (!fileObject.atEnd() && !mainWindow->doCancelWorkingThreads()){
+            crypto.addData(fileObject.read(8192));
+        }
+
+        QByteArray hash = crypto.result();
+        QString calculatedHash = hash.toHex().toUpper().trimmed();
+
+        int compareResult = calculatedHash.compare(md5);
+
+        if (compareResult != 0 && !mainWindow->doCancelWorkingThreads()) {
+            qDebug() << "hash mismatch for:" << file << " compare result:" << compareResult;
+
+            qDebug() << "calculated hash of:" << file << " is:" << calculatedHash << " and specified one is:" << md5;
+            res = 2;
+
+            mainWindow->appendToFilesToDownloadStringList(MainWindow::patchUrl + name);
+        }
+
+        if (!mainWindow->doCancelWorkingThreads())
+            emit fullScannedFile(name, compareResult == 0);
+    }
+
+    delete file;
+
+    return res;
+}

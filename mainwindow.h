@@ -36,7 +36,7 @@ class MainWindow : public QMainWindow
   Q_OBJECT
 
 public:
-  explicit MainWindow(QWidget *parent = 0);
+  explicit MainWindow(QWidget *parent = nullptr);
   ~MainWindow();
 
   static QString patchUrl;
@@ -52,7 +52,7 @@ public:
   static char server_reply[2000];
 //  char const *p = "abc";
   char const *message;
-  static QString received_xml;
+  QString received_xml;
 
 
   public slots:
@@ -78,17 +78,21 @@ public:
   void closeTab(int index);
   void checkForUpdates();
   void requiredFileDownloadFileFinished(QNetworkReply* reply);
+  void newrequiredFileDownloadFileFinished(QNetworkReply* reply);
+//  void FileDownloadFileFinished(QNetworkReply* reply);
+//  void newFileDownloadFileFinished(QNetworkReply* reply);
   void patchesDownloadFileFinished(QNetworkReply* reply);
   void runUpdateCheckTimer();
   void startSWGSetup();
   void showAboutDialog();
   QFile* getRequiredFilesFile();
+  QFile* getNewRequiredFilesFile();
   void systemTrayActivated(QSystemTrayIcon::ActivationReason reason);
   void deleteProfiles();
   void startLoadBasicCheck();
   void showGameModsOptions();
   void showMacroEditor();
-  int extractFiles();
+  //int extractFiles();
 
   void sslErrors(QNetworkReply* reply, const QList<QSslError>& errors);
 
@@ -129,6 +133,7 @@ private:
   QNetworkAccessManager clientFilesNetworkAccessManager;
   QNetworkAccessManager novaNetworkAccessManager;
   QNetworkAccessManager requiredFilesNetworkManager;
+  QNetworkAccessManager newrequiredFilesNetworkManager;
   QNetworkAccessManager patchesNetworkManager;
   QFutureWatcher<int> loadWatcher;
   QFutureWatcher<int> fullScanWatcher;

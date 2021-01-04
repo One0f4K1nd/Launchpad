@@ -45,7 +45,7 @@ void LoginServers::reloadServers() {
     }
 
     if (ui->listWidget->count() == 0)
-        addServer("swgemu.com", defaultLoginAddress, defaultLoginPort);
+        addServer("192.168.0.116", defaultLoginAddress, defaultLoginPort);
 
     settings.endArray();
 }
@@ -77,8 +77,8 @@ void LoginServers::removeServer() {
         return;
     }
 
-    if (server->getName() == "swgemu.com") {
-        QMessageBox::warning(this, "Error", "Can't delete swgemu.com server!");
+    if (server->getName() == "192.168.0.116") {
+        QMessageBox::warning(this, "Error", "Can't delete 192.168.0.116 server!");
         return;
     }
 
