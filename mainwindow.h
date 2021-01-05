@@ -44,16 +44,14 @@ public:
   static QString gameExecutable;
   static const QString version;
   static QString selfUpdateUrl;  
-  volatile bool modded;
   WSADATA wsa;
   struct sockaddr_in server;
   static SOCKET s;
   static int status;
   static char server_reply[2000];
-//  char const *p = "abc";
   char const *message;
   QString received_xml;
-
+  QDateTime timestamp;
 
   public slots:
   void showSettings();
@@ -78,21 +76,16 @@ public:
   void closeTab(int index);
   void checkForUpdates();
   void requiredFileDownloadFileFinished(QNetworkReply* reply);
-  void newrequiredFileDownloadFileFinished(QNetworkReply* reply);
-//  void FileDownloadFileFinished(QNetworkReply* reply);
-//  void newFileDownloadFileFinished(QNetworkReply* reply);
   void patchesDownloadFileFinished(QNetworkReply* reply);
   void runUpdateCheckTimer();
   void startSWGSetup();
   void showAboutDialog();
   QFile* getRequiredFilesFile();
-  QFile* getNewRequiredFilesFile();
   void systemTrayActivated(QSystemTrayIcon::ActivationReason reason);
   void deleteProfiles();
   void startLoadBasicCheck();
   void showGameModsOptions();
   void showMacroEditor();
-  //int extractFiles();
 
   void sslErrors(QNetworkReply* reply, const QList<QSslError>& errors);
 
@@ -133,7 +126,6 @@ private:
   QNetworkAccessManager clientFilesNetworkAccessManager;
   QNetworkAccessManager novaNetworkAccessManager;
   QNetworkAccessManager requiredFilesNetworkManager;
-  QNetworkAccessManager newrequiredFilesNetworkManager;
   QNetworkAccessManager patchesNetworkManager;
   QFutureWatcher<int> loadWatcher;
   QFutureWatcher<int> fullScanWatcher;

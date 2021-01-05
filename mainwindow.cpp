@@ -23,14 +23,13 @@
 //#include <QWebElement>
 //#include <QWebFrame>
 #include <QNetworkConfiguration>
+
 #include <QSsl>
 #include <vector>
 #include <string>
 #include <stdio.h>
 #include <fstream>
 #include <sstream>
-//#include </.h>
-//#include <curl/easy.h>
 #include "downloader.h"
 
 #ifdef Q_OS_WIN32
@@ -179,19 +178,10 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(ui->actionFolders, SIGNAL(triggered()), this, SLOT(showSettings()));
 
     connect(this, SIGNAL(finished()), this, SLOT(statusXmlIsReady()) );
-
-    /*connect(&novaNetworkAccessManager, SIGNAL(finished(QNetworkReply*)), this, SLOT(statusXmlIsReady(QNetworkReply*)) );
-
     connect(&networkAccessManager, SIGNAL(sslErrors(QNetworkReply*, const QList<QSslError>&)), this, SLOT(sslErrors(QNetworkReply*, const QList<QSslError>&)) );
-    connect(&novaNetworkAccessManager, SIGNAL(sslErrors(QNetworkReply*, const QList<QSslError>&)), this, SLOT(sslErrors(QNetworkReply*, const QList<QSslError>&)) );*/
-
-        connect(&clientFilesNetworkAccessManager, SIGNAL(finished(QNetworkReply*)), this, SLOT(downloadFileFinished(QNetworkReply*)));
+    connect(&clientFilesNetworkAccessManager, SIGNAL(finished(QNetworkReply*)), this, SLOT(downloadFileFinished(QNetworkReply*)));
     connect(&requiredFilesNetworkManager, SIGNAL(finished(QNetworkReply*)), this, SLOT(requiredFileDownloadFileFinished(QNetworkReply*)));
-    connect(&newrequiredFilesNetworkManager, SIGNAL(finished(QNetworkReply*)), this, SLOT(newrequiredFileDownloadFileFinished(QNetworkReply*)));
     connect(&patchesNetworkManager, SIGNAL(finished(QNetworkReply*)), this, SLOT(patchesDownloadFileFinished(QNetworkReply*)));
-
-    //connect(ui->webView, SIGNAL(loadFinished(bool)), this, SLOT(webPageLoadFinished(bool)));
-
     connect(ui->pushButton_Start, SIGNAL(clicked()), this, SLOT(startSWG()));
     connect(fileScanner, SIGNAL(requiredFileExists(QString)), this, SLOT(updateBasicLoadProgress(QString)));
     connect(fileScanner, SIGNAL(fullScannedFile(QString, bool)), this, SLOT(updateFullScanProgress(QString, bool)));
@@ -240,10 +230,11 @@ MainWindow::MainWindow(QWidget *parent) :
         startLoadBasicCheck();
     } else {
 #ifdef Q_OS_WIN32
-        QDir dir("C:/SWGEmu");
-//E:/Program Files (x86)/SWGEmu/SWGEmu
-        if (dir.exists() && FileScanner::checkSwgFolder("C:/SWGEmu")) {
-            settingsOptions.setValue("swg_folder", "C:/SWGEmu");
+        QDir dir("E:/SWGMTGEmu");
+
+        if (dir.exists() && FileScanner::checkSwgFolder("E:/SWGMTGEmu")) {
+            qDebug() << "swg_folder : " << "E:/SWGMTGEmu exists!";
+            settingsOptions.setValue("swg_folder", "E:/SWGMTGEmu");
             startLoadBasicCheck();
         }  else
 
@@ -265,7 +256,7 @@ MainWindow::MainWindow(QWidget *parent) :
         }
     }
 
-    requiredFilesNetworkManager.get(QNetworkRequest(QUrl(patchUrl + "required2.txt")));
+    requiredFilesNetworkManager.get(QNetworkRequest(QUrl(patchUrl + "required3.txt")));
     silentSelfUpdater->silentCheck();
 
 }
@@ -349,17 +340,6 @@ void MainWindow::deleteProfiles() {
         QMessageBox::warning(this, "Warning", "There was an error deleting the profiles directory!");
     }
 }
-
-//static size_t write_data(void *ptr, size_t size, size_t nmemb, void *stream)
-//{
-//    size_t written = fwrite(ptr, size, nmemb, (FILE *)stream);
-//    return written;
-//}
-//static size_t WriteCallback(void *contents, size_t size, size_t nmemb, void *userp)
-//{
-//    ((std::string*)userp)->append((char*)contents, size * nmemb);
-//    return size * nmemb;
-//}
 
 int MainWindow::readBasiliskServerStatus() {
     //QNetworkRequest request = QNetworkRequest(QUrl(BASILISK_STATUS_XML));
@@ -516,7 +496,7 @@ void MainWindow::triggerNews() {
 #endif
 }
 
-QFile* MainWindow::getNewRequiredFilesFile() {
+QFile* MainWindow::getRequiredFilesFile() {
     QSettings settings;
     //QString folder = settings.value("swg_folder").toString();
 
@@ -541,31 +521,6 @@ QFile* MainWindow::getNewRequiredFilesFile() {
     return file;
 }
 
-QFile* MainWindow::getRequiredFilesFile() {
-    QSettings settings;
-    //QString folder = settings.value("swg_folder").toString();
-
-    QFile* file = NULL;
-
-    //if (QDir(folder).exists()) {
-    file = new QFile("required2.txt");
-
-    if (file->exists()) {
-        if (file->open(QIODevice::ReadOnly | QIODevice::Text)) {
-            return file;
-        } else
-            delete file;
-    } else {
-        delete file;
-    }
-    //}
-
-    file = new QFile(":/files/required2.txt");
-    file->open(QIODevice::ReadOnly | QIODevice::Text);
-
-    return file;
-}
-
 void MainWindow::addFileToDownloadSlot(QString file) {
     filesToDownload.append(file);
 }
@@ -582,43 +537,14 @@ void MainWindow::requiredFileDownloadFileFinished(QNetworkReply* reply) {
         return;
     }
 
-    qDebug() << "got required2.txt";
-
-    QString data = reply->readAll();
-
-    QSettings settings;
-    // QString folder = settings.value("swg_folder").toString();
-
-    // if (QDir(folder).exists()) {
-    QFile file("required2.txt");
-
-    if (file.open(QIODevice::WriteOnly | QIODevice::Text)) {
-        QTextStream stream(&file);
-
-        stream << data;
-
-        file.close();
-
-        return;
-    }
-    //}
-
-    startLoadBasicCheck();
-}
-
-void MainWindow::newrequiredFileDownloadFileFinished(QNetworkReply* reply) {
-    if (reply && reply->error() != QNetworkReply::NoError) {
-        return;
-    }
-
     qDebug() << "got required3.txt";
 
     QString data = reply->readAll();
 
     QSettings settings;
-    // QString folder = settings.value("swg_folder").toString();
+    QString folder = settings.value("swg_folder").toString();
 
-    // if (QDir(folder).exists()) {
+    if (QDir(folder).exists()) {
     QFile file("required3.txt");
 
     if (file.open(QIODevice::WriteOnly | QIODevice::Text)) {
@@ -630,7 +556,7 @@ void MainWindow::newrequiredFileDownloadFileFinished(QNetworkReply* reply) {
 
         return;
     }
-    //}
+    }
 
     startLoadBasicCheck();
 }
@@ -791,18 +717,6 @@ void MainWindow::startFullScan(bool forceConfigRestore) {
         fullScanWatcher.setFuture(future);
     }
 
-    //mod the galaxy required3 scans
-    if (multiThreaded) {
-        fullScanWorkingThreads = getRequiredFiles().size();
-
-        runningFullScan = true;
-        QtConcurrent::run(fileScanner, &FileScanner::newScanMultiThreaded, restoreConfigFiles);
-    } else {
-        runningFullScan = true;
-
-        QFuture<int> future = QtConcurrent::run(fileScanner, &FileScanner::newScanSingleThreaded, restoreConfigFiles);
-        fullScanWatcher.setFuture(future);
-    }
 }
 
 
@@ -1091,6 +1005,8 @@ void MainWindow::loadFinished() {
 
     int res = loadWatcher.result();
 
+    qDebug() << "result : " << res;
+
     if (res == 0) {
         if (updateTimeCounter < 0) {
             enableStart();
@@ -1119,7 +1035,7 @@ QVector<QPair<QString, qint64> > MainWindow::getRequiredFiles() {
 
     //if (QDir(folder).exists()) {
     {
-        QFile file("required2.txt");
+        QFile file("required3.txt");
 
         if (file.exists()) {
             if (file.open(QIODevice::ReadOnly | QIODevice::Text)) {
@@ -1141,7 +1057,7 @@ QVector<QPair<QString, qint64> > MainWindow::getRequiredFiles() {
     }
 
 
-    QFile file(":/files/required2.txt");
+    QFile file(":/files/required3.txt");
 
     if (!file.open(QIODevice::ReadOnly | QIODevice::Text))
         return data;
@@ -1349,7 +1265,7 @@ void MainWindow::statusXmlIsReady() {
     stream << "<div align=\"center\"><b>" << values->value("name") << "</b></div>";
 
     if (up) {
-        stream << "<div align=\"center\" style=\"color:green\">Status: " << values->value("status") << "</div>";
+        stream << "<div align=\"center\" style=\"color:yellow\">Status: " << values->value("status") << "</div>";
 
         stream << "<div align=\"center\">Current online connections: " << values->value("connected") << "</div>";
         stream << "<div align=\"center\">Max allowed connections: " << values->value("cap") << "</div>";
@@ -1374,9 +1290,16 @@ void MainWindow::statusXmlIsReady() {
     } else
         stream << "<div align=\"center\" style=\"color:red\">Status: " << values->value("status") << "</div>";
 
-    QDateTime timestamp;
-    timestamp.setTime_t(values->value("timestamp").toULong());
-    stream << "<div align=\"center\">Last updated: " << timestamp.toString(Qt::SystemLocaleShortDate) << "</div><br><br>";
+
+    MainWindow::timestamp.setTime_t((values->value("timestamp")).toULong());
+
+    long long unixstamp = (values->value("timestamp")).toLongLong();
+    QDateTime dt3 = QDateTime::fromMSecsSinceEpoch(unixstamp);
+
+    qDebug() << "time(unixstamp):" << dt3.toString();
+
+    stream << "<div align=\"center\">Last updated: " << dt3.toString() << "</div><br><br>";
+//    stream << "<div align=\"center\">Last updated: " << timestamp.toString(Qt::SystemLocaleShortDate) << "</div><br><br>";
     ui->textBrowser->insertHtml(labelText);
 }
 
@@ -1473,7 +1396,27 @@ void MainWindow::installSWGEmu() {
 
         startFullScan(true);
 
-        //        extractFiles();
+        QDir dir(settingsVals.value("swg_folder").toString(), {"data*.tre"});
+        for(const QString & filename: dir.entryList()){
+            dir.remove(filename);
+        }
+        QDir dir2(settingsVals.value("swg_folder").toString(), {"hotfix*.tre"});
+        for(const QString & filename: dir2.entryList()){
+            dir2.remove(filename);
+        }
+        QDir dir3(settingsVals.value("swg_folder").toString(), {"patch*.tre"});
+        for(const QString & filename: dir3.entryList()){
+            dir3.remove(filename);
+        }
+        QDir dir4(settingsVals.value("swg_folder").toString(), {"default*.tre"});
+        for(const QString & filename: dir4.entryList()){
+            dir4.remove(filename);
+        }
+        QDir dir5(settingsVals.value("swg_folder").toString(), {"bottom*.tre"});
+        for(const QString & filename: dir5.entryList()){
+            dir5.remove(filename);
+        }
+
     }
 }
 

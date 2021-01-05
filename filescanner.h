@@ -14,8 +14,6 @@ public:
 
     void fullScanMultiThreaded(bool);
     int fullScanSingleThreaded(bool);
-    void newScanMultiThreaded(bool);
-    int newScanSingleThreaded(bool);
 
     int loadAndBasicCheckFiles(QString swgFolder);
 

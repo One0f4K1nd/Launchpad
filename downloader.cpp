@@ -11,7 +11,7 @@ void Downloader::doDownload()
     connect(manager, SIGNAL(finished(QNetworkReply*)),
             this, SLOT(replyFinished(QNetworkReply*)));
 
-    manager->get(QNetworkRequest(QUrl("http://192.168.0.116")));
+    manager->get(QNetworkRequest(QUrl("http://192.168.0.116/tre/")));
 }
 
 void Downloader::replyFinished (QNetworkReply *reply)

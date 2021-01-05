@@ -99,7 +99,7 @@ DISTFILES += \
     required3.txt \
     tactical.png
 
-LIBS += -L$$PWD/./ -lzip
+#LIBS += -L$$PWD/./ -lzip
 
 ##pragma comment(lib, "Ws2_32.Lib")
 ##pragma comment(lib, "Wldap32.Lib")
