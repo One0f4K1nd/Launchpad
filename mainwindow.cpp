@@ -1006,6 +1006,7 @@ void MainWindow::loadFinished() {
     int res = loadWatcher.result();
 
     qDebug() << "result : " << res;
+    ui->label_current_work->setText("loadWatcher result = " + QString::number(res));
 
     if (res == 0) {
         if (updateTimeCounter < 0) {
