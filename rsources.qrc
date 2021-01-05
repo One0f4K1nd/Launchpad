@@ -32,6 +32,7 @@
         <file>shared_base_player.iff</file>
         <file>icons.xml</file>
         <file>required3.txt</file>
+        <file>proj.rc</file>
     </qresource>
     <qresource prefix="/"/>
 </RCC>

@@ -66,7 +66,6 @@ FORMS    += mainwindow.ui \
 
 OTHER_FILES += \
     logo_yellow.png \
-    tactical.png \
     emu.rc \
     LICENSE.txt \
     swgemu.svg \
@@ -91,13 +90,19 @@ win32 {
     QMAKE_LFLAGS_WINDOWS += /MANIFESTUAC:level=\'requireAdministrator\'
 }
 
+@
+win32:RC_FILE = proj.rc
+@
 
-RC_FILE = emu.rc
+@
+unix:RC_FILE = emu.rc
+@
+
+ICON = emu.ico
 
 DISTFILES += \
     ModTheGalaxy_Logo.jpg \
-    required3.txt \
-    tactical.png
+    required3.txt
 
 #LIBS += -L$$PWD/./ -lzip
 
