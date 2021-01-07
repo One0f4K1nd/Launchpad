@@ -27,12 +27,11 @@
         <file>ModTheGalaxy_Logo.jpg</file>
     </qresource>
     <qresource prefix="/files">
-        <file>required2.txt</file>
         <file>required.txt</file>
         <file>shared_base_player.iff</file>
         <file>icons.xml</file>
         <file>required3.txt</file>
-        <file>proj.rc</file>
+        <file>requiredsupportfiles.txt</file>
     </qresource>
     <qresource prefix="/"/>
 </RCC>

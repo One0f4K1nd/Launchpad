@@ -79,13 +79,13 @@ int FileScanner::loadAndBasicCheckFiles(QString swgFolder) {
 }
 
 void FileScanner::fullScanMultiThreaded(bool ) {
-    QFile* file = mainWindow->getRequiredFilesFile();
+    QFile* file3 = mainWindow->getRequiredFilesFile("required3.txt");
 
     QSettings settings;
     QString swgFolder = settings.value("swg_folder").toString();
 
-    while (!file->atEnd()) {
-        QByteArray line = file->readLine();
+    while (!file3->atEnd()) {
+        QByteArray line = file3->readLine();
 
         //QRegExp rx("(\\ |\\,|\\.|\\;|\\t)"); //RegEx for ' ' or ',' or '.' or ':' or '\t'
         QList<QByteArray> query = line.split(';');
@@ -99,7 +99,8 @@ void FileScanner::fullScanMultiThreaded(bool ) {
         QtConcurrent::run(this, &FileScanner::fullScanFile, fullFile, name, size.toLongLong(), md5);
     }
 
-    delete file;
+    delete file3;
+//    delete filesupport;
 }
 
 void FileScanner::fullScanFile(const QString& file, const QString& name, qint64, const QString &md5) {
@@ -153,7 +154,7 @@ void FileScanner::fullScanFile(const QString& file, const QString& name, qint64,
 }
 
 int FileScanner::fullScanSingleThreaded(bool ) {
-    QFile* file = mainWindow->getRequiredFilesFile();
+    QFile* file = mainWindow->getRequiredFilesFile("required3.txt");
 
     QSettings settings;
     QString swgFolder = settings.value("swg_folder").toString();
@@ -170,12 +171,12 @@ int FileScanner::fullScanSingleThreaded(bool ) {
         QString size = query.at(1);
         QString md5 = query.at(2).trimmed();
 
-        QString file = swgFolder + "/" + name;
+        QString file3 = swgFolder + "/" + name;
 
-        QFile fileObject(file);
+        QFile fileObject(file3);
 
         if (!fileObject.exists()) {
-            qDebug() << file << "doesnt exist";
+            qDebug() << file3 << "doesnt exist";
 
             mainWindow->appendToFilesToDownloadStringList(MainWindow::patchUrl + name);
 
@@ -207,9 +208,9 @@ int FileScanner::fullScanSingleThreaded(bool ) {
         int compareResult = calculatedHash.compare(md5);
 
         if (compareResult != 0 && !mainWindow->doCancelWorkingThreads()) {
-            qDebug() << "hash mismatch for:" << file << " compare result:" << compareResult;
+            qDebug() << "hash mismatch for:" << file3 << " compare result:" << compareResult;
 
-            qDebug() << "calculated hash of:" << file << " is:" << calculatedHash << " and specified one is:" << md5;
+            qDebug() << "calculated hash of:" << file3 << " is:" << calculatedHash << " and specified one is:" << md5;
             res = 2;
 
             mainWindow->appendToFilesToDownloadStringList(MainWindow::patchUrl + name);
@@ -224,3 +225,5 @@ int FileScanner::fullScanSingleThreaded(bool ) {
     return res;
 }
 
+
+mainWindow->

@@ -80,7 +80,7 @@ public:
   void runUpdateCheckTimer();
   void startSWGSetup();
   void showAboutDialog();
-  QFile* getRequiredFilesFile();
+  QFile* getRequiredFilesFile(QString fileName);
   void systemTrayActivated(QSystemTrayIcon::ActivationReason reason);
   void deleteProfiles();
   void startLoadBasicCheck();

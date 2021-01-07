@@ -73,9 +73,9 @@ OTHER_FILES += \
     play.svg \
     logo-emu.svg \
     cogs.svg \
-    required2.txt \
     required.txt \
     required3.txt \
+    requiredsupportfiles.txt \
     info.svg
 
 RESOURCES += \
@@ -90,19 +90,15 @@ win32 {
     QMAKE_LFLAGS_WINDOWS += /MANIFESTUAC:level=\'requireAdministrator\'
 }
 
-@
-win32:RC_FILE = proj.rc
-@
+RC_FILE = emu.rc
 
-@
-unix:RC_FILE = emu.rc
-@
 
 ICON = emu.ico
 
 DISTFILES += \
     ModTheGalaxy_Logo.jpg \
-    required3.txt
+    required3.txt \
+    requiredsupportfiles.txt
 
 #LIBS += -L$$PWD/./ -lzip
 

@@ -74,15 +74,17 @@ int InstallFromSWG::copyFiles() {
             QDir(dir).mkpath(".");
         }
 
-#ifdef Q_OS_WIN32
-        bool result = QFile::copy(swgfolder + "\\" + file.first, emuFolder + file.first);
-#else
-        bool result = QFile::copy(swgfolder + "/" + file.first, emuFolder + file.first);
-#endif
+//#ifdef Q_OS_WIN32
+//        bool result = QFile::copy(swgfolder + "\\" + file.first, emuFolder + file.first);
+//#else
+//        bool result = QFile::copy(swgfolder + "/" + file.first, emuFolder + file.first);
+//#endif
 
-        emit fileCopiedSignal(file.first, result);
+        qDebug() << file.first << " Verfied/Not Copied! Files are not being copied in this version.  The necessary files will be downloaded from the server.";
+        emit fileCopiedSignal(file.first, 0);
     }
 
+    qDebug() << "Installation Verfied Successfully!";
     return 0;
 }
 
@@ -101,7 +103,7 @@ int InstallFromSWG::checkSWGFolder() {
         return 1;
 
     QStringList filesToCheck;
-    filesToCheck << "bottom.tre" << "data_animation_00.tre" << "data_texture_04.tre";
+    filesToCheck << "Mss32.dll" << "miles/Msseax.m3d" << "texture/loading/space/images/space_load_pvp.dds";
 
     for (int i = 0; i < filesToCheck.size(); ++i) {
 #ifdef Q_OS_WIN32
@@ -119,7 +121,7 @@ int InstallFromSWG::checkSWGFolder() {
 int InstallFromSWG::installFiles() {
     QSettings settings;
 
-    QMessageBox::information(this, "SWGEmu", "Please choose a valid Star Wars Galaxies installation");
+    QMessageBox::information(this, "SWGMTGEmu", "Please choose a valid Star Wars Galaxies installation");
 
     swgfolder = QFileDialog::getExistingDirectory(this, tr("Open Directory"),
                                                    "/home",
@@ -134,7 +136,7 @@ int InstallFromSWG::installFiles() {
         return 1;
     }
 
-    QMessageBox::information(this, "SWGEmu", "Please choose where you want to install SWGEmu");
+    QMessageBox::information(this, "SWGMTGEmu", "Please choose where you want to install SWGMTGEmu");
 
     emuFolder = QFileDialog::getExistingDirectory(this, tr("Open Directory"),
                                                     "/home",
@@ -142,7 +144,7 @@ int InstallFromSWG::installFiles() {
                                                     | QFileDialog::DontResolveSymlinks);
 
     if (!QDir(emuFolder).exists() || emuFolder.isEmpty()) {
-        QMessageBox::warning(this, "Folder", "The swgemu folder you selected isn't a valid directory");
+        QMessageBox::warning(this, "Folder", "The SWGMTGEmu folder you selected isn't a valid directory");
 
         return 1;
     }
@@ -151,11 +153,11 @@ int InstallFromSWG::installFiles() {
     emuFolder = emuFolder + "/SWGMTGEmu/";
 
     if (QDir(emuFolder).exists()) {
-        if (QMessageBox::question(this, "Warning", "SWGEmu folder already exists, do you want to overwrite?") != QMessageBox::Yes)
+        if (QMessageBox::question(this, "Warning", "SWGMTGEmu folder already exists, do you want to overwrite?") != QMessageBox::Yes)
             return 3;
     } else {
         if (!QDir(emuFolder).mkpath(".")) {
-            QMessageBox::warning(this, "ERROR", "Could not create the swgemu folder!");
+            QMessageBox::warning(this, "ERROR", "Could not create the SWGMTGEmu folder!");
             return 4;
         }
     }

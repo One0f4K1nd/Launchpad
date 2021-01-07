@@ -496,14 +496,14 @@ void MainWindow::triggerNews() {
 #endif
 }
 
-QFile* MainWindow::getRequiredFilesFile() {
-    QSettings settings;
+QFile* MainWindow::getRequiredFilesFile(QString fileName) {
+//    QSettings settings;
     //QString folder = settings.value("swg_folder").toString();
 
     QFile* file = NULL;
 
     //if (QDir(folder).exists()) {
-    file = new QFile("required3.txt");
+    file = new QFile(fileName);
 
     if (file->exists()) {
         if (file->open(QIODevice::ReadOnly | QIODevice::Text)) {
@@ -515,7 +515,7 @@ QFile* MainWindow::getRequiredFilesFile() {
     }
     //}
 
-    file = new QFile(":/files/required3.txt");
+    file = new QFile(":/files/" + fileName);
     file->open(QIODevice::ReadOnly | QIODevice::Text);
 
     return file;
@@ -526,7 +526,7 @@ void MainWindow::addFileToDownloadSlot(QString file) {
 }
 
 void MainWindow::showAboutDialog() {
-    QMessageBox::about(this, "SWGemu", "SWGEmu Launchpad version " + version + "\n\nThis program is distributed in the hope that it will be useful,"
+    QMessageBox::about(this, "SWGMTGEmu", "SWGMTGEmu Launchpad version " + version + "\n\nThis program is distributed in the hope that it will be useful,"
                                                                                " but WITHOUT ANY WARRANTY; without even the implied warranty of"
                                                                                " MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the"
                                                                                " GNU General Public License for more details.");
@@ -941,7 +941,7 @@ void MainWindow::startSWGSetup() {
     QString folder = settings.value("swg_folder").toString();
 
 #ifdef Q_OS_WIN32
-    if (!QProcess::startDetached(folder + "\\" + "SWGEmu_Setup.exe", QStringList(), folder)) {
+    if (!QProcess::startDetached(folder + "\\" + "SWGMTGEmu_Setup.exe", QStringList(), folder)) {
         QMessageBox::warning(this, "ERROR", "Could not launch game settings!");
     }
 #else
@@ -1396,28 +1396,6 @@ void MainWindow::installSWGEmu() {
         settings->restoreFolder();
 
         startFullScan(true);
-
-        QDir dir(settingsVals.value("swg_folder").toString(), {"data*.tre"});
-        for(const QString & filename: dir.entryList()){
-            dir.remove(filename);
-        }
-        QDir dir2(settingsVals.value("swg_folder").toString(), {"hotfix*.tre"});
-        for(const QString & filename: dir2.entryList()){
-            dir2.remove(filename);
-        }
-        QDir dir3(settingsVals.value("swg_folder").toString(), {"patch*.tre"});
-        for(const QString & filename: dir3.entryList()){
-            dir3.remove(filename);
-        }
-        QDir dir4(settingsVals.value("swg_folder").toString(), {"default*.tre"});
-        for(const QString & filename: dir4.entryList()){
-            dir4.remove(filename);
-        }
-        QDir dir5(settingsVals.value("swg_folder").toString(), {"bottom*.tre"});
-        for(const QString & filename: dir5.entryList()){
-            dir5.remove(filename);
-        }
-
     }
 }
 
