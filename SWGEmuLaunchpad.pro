@@ -74,8 +74,8 @@ OTHER_FILES += \
     logo-emu.svg \
     cogs.svg \
     required.txt \
-    required3.txt \
-    requiredsupportfiles.txt \
+    downloadlist.txt \
+    downloadlist.txt \
     info.svg
 
 RESOURCES += \
@@ -97,8 +97,9 @@ ICON = emu.ico
 
 DISTFILES += \
     ModTheGalaxy_Logo.jpg \
-    required3.txt \
-    requiredsupportfiles.txt
+    downloadlist.txt \
+    downloadlist.txt \
+    downloadlist.txt
 
 #LIBS += -L$$PWD/./ -lzip
 

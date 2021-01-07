@@ -63,15 +63,15 @@ void InstallFromSWG::closeEvent(QCloseEvent* event) {
 }
 
 int InstallFromSWG::copyFiles() {
-    QVector<QPair<QString, qint64> > requiredFiles = MainWindow::getRequiredFiles();
+    QVector<QPair<QString, qint64> > requiredFiles = MainWindow::getRequiredFiles("downloadlist.txt");
 
     for (int i = 0; i < requiredFiles.size() && !cancelThreads; ++i) {
         const QPair<QString, qint64>& file = requiredFiles.at(i);
 
         if (file.first.contains("/")) {
-            QString dir = emuFolder + file.first.mid(0, file.first.lastIndexOf("/"));
+            //QString dir = emuFolder + file.first.mid(0, file.first.lastIndexOf("/"));
 
-            QDir(dir).mkpath(".");
+            //QDir(dir).mkpath(".");
         }
 
 //#ifdef Q_OS_WIN32
@@ -80,11 +80,11 @@ int InstallFromSWG::copyFiles() {
 //        bool result = QFile::copy(swgfolder + "/" + file.first, emuFolder + file.first);
 //#endif
 
-        qDebug() << file.first << " Verfied/Not Copied! Files are not being copied in this version.  The necessary files will be downloaded from the server.";
+        qDebug() << file.first << " added to download list...";
         emit fileCopiedSignal(file.first, 0);
     }
 
-    qDebug() << "Installation Verfied Successfully!";
+    qDebug() << "Downloads Queued...";
     return 0;
 }
 
@@ -119,22 +119,22 @@ int InstallFromSWG::checkSWGFolder() {
 }
 
 int InstallFromSWG::installFiles() {
-    QSettings settings;
+//    QSettings settings;
 
-    QMessageBox::information(this, "SWGMTGEmu", "Please choose a valid Star Wars Galaxies installation");
+//    QMessageBox::information(this, "SWGMTGEmu", "Please choose a valid Star Wars Galaxies installation");
 
-    swgfolder = QFileDialog::getExistingDirectory(this, tr("Open Directory"),
-                                                   "/home",
-                                                   QFileDialog::ShowDirsOnly
-                                                   | QFileDialog::DontResolveSymlinks);
+//    swgfolder = QFileDialog::getExistingDirectory(this, tr("Open Directory"),
+//                                                   "/home",
+//                                                   QFileDialog::ShowDirsOnly
+//                                                   | QFileDialog::DontResolveSymlinks);
 
-    int validFolder = checkSWGFolder();
+//    int validFolder = checkSWGFolder();
 
-    if (validFolder != 0) {
-        QMessageBox::warning(this, "Folder", "The folder you selected isnt a valid Star Wars Galaxies installation!");
+//    if (validFolder != 0) {
+//        QMessageBox::warning(this, "Folder", "The folder you selected isnt a valid Star Wars Galaxies installation!");
 
-        return 1;
-    }
+//        return 1;
+//    }
 
     QMessageBox::information(this, "SWGMTGEmu", "Please choose where you want to install SWGMTGEmu");
 
@@ -143,11 +143,11 @@ int InstallFromSWG::installFiles() {
                                                     QFileDialog::ShowDirsOnly
                                                     | QFileDialog::DontResolveSymlinks);
 
-    if (!QDir(emuFolder).exists() || emuFolder.isEmpty()) {
-        QMessageBox::warning(this, "Folder", "The SWGMTGEmu folder you selected isn't a valid directory");
+//    if (!QDir(emuFolder).exists() || emuFolder.isEmpty()) {
+//        QMessageBox::warning(this, "Folder", "The SWGMTGEmu folder you selected isn't a valid directory");
 
-        return 1;
-    }
+//        return 1;
+//    }
 
     //qDebug() << emuFolder;
     emuFolder = emuFolder + "/SWGMTGEmu/";
@@ -162,7 +162,7 @@ int InstallFromSWG::installFiles() {
         }
     }
 
-    QVector<QPair<QString, qint64> > requiredFiles = MainWindow::getRequiredFiles();
+    QVector<QPair<QString, qint64> > requiredFiles = MainWindow::getRequiredFiles("downloadlist.txt");
 
     ui->progressBar->setValue(0);
     ui->progressBar->setMaximum(requiredFiles.size());

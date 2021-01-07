@@ -60,7 +60,7 @@ public:
   void loadFinished();
   int readBasiliskServerStatus();
   void startFullScan(bool forceConfigRestore = false);
-  static QVector<QPair<QString, qint64> > getRequiredFiles();
+  static QVector<QPair<QString, qint64> > getRequiredFiles(QString rqd);
   void downloadFinished();
   void downloadFileFinished(QNetworkReply *reply);
   void webPageLoadFinished(bool ok);

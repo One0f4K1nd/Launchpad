@@ -56,11 +56,10 @@ using namespace std;
 #define WEB_PREFIX "http"
 
 #define BASILISK_STATUS_XML WEB_PREFIX "://" MAIN_SERVER "/supernova_status.xml" // i did not disable this yet
-//#define NOVA_STATUS_XML "https://192.168.0.116/supernova_status.xml"
 
 QString MainWindow::patchUrl = WEB_PREFIX "://" MAIN_SERVER "/tre/"; // Insert download URL here
 QString MainWindow::newsUrl = "https://modthegalaxy.com/index.php";
-QString MainWindow::gameExecutable = "SWGEmu.exe";
+QString MainWindow::gameExecutable = "SWGMTGEmu.exe";
 #ifdef Q_OS_WIN32
 QString MainWindow::selfUpdateUrl = WEB_PREFIX "://" MAIN_SERVER "/setup.cfg"; // Insert update URL here
 #else
@@ -80,7 +79,7 @@ MainWindow::MainWindow(QWidget *parent) :
 
     QCoreApplication::setOrganizationName("SWGMTGEmu");
     QCoreApplication::setOrganizationDomain("modthegalaxy.com");
-    QCoreApplication::setApplicationName("SWGEMU MTG Launchpad");
+    QCoreApplication::setApplicationName("SWGMTGEmu Launchpad");
 
     requiredFilesCount = 0;
     nextFileToDownload = 0;
@@ -214,6 +213,7 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->checkBox_instances->setChecked(multipleInstances);
     ui->textBrowser->viewport()->setAutoFillBackground(false);
     ui->textBrowser->setAutoFillBackground(false);
+    ui->MainWindow::donationBar->hide();
 
     updateServerStatus();
 
@@ -256,7 +256,8 @@ MainWindow::MainWindow(QWidget *parent) :
         }
     }
 
-    requiredFilesNetworkManager.get(QNetworkRequest(QUrl(patchUrl + "required3.txt")));
+    requiredFilesNetworkManager.get(QNetworkRequest(QUrl(patchUrl + "downloadlist.txt")));
+    //requiredFilesNetworkManager.get(QNetworkRequest(QUrl(patchUrl + "downloadlist.txt")));
     silentSelfUpdater->silentCheck();
 
 }
@@ -522,6 +523,7 @@ QFile* MainWindow::getRequiredFilesFile(QString fileName) {
 }
 
 void MainWindow::addFileToDownloadSlot(QString file) {
+    //todo
     filesToDownload.append(file);
 }
 
@@ -529,7 +531,8 @@ void MainWindow::showAboutDialog() {
     QMessageBox::about(this, "SWGMTGEmu", "SWGMTGEmu Launchpad version " + version + "\n\nThis program is distributed in the hope that it will be useful,"
                                                                                " but WITHOUT ANY WARRANTY; without even the implied warranty of"
                                                                                " MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the"
-                                                                               " GNU General Public License for more details.");
+                                                                               " GNU General Public License for more details.  Its sole purpose is to"
+                                                                               " be a dev tool used to further the Galaxies projects across the world.");
 }
 
 void MainWindow::requiredFileDownloadFileFinished(QNetworkReply* reply) {
@@ -537,7 +540,7 @@ void MainWindow::requiredFileDownloadFileFinished(QNetworkReply* reply) {
         return;
     }
 
-    qDebug() << "got required3.txt";
+    qDebug() << "got network reply";
 
     QString data = reply->readAll();
 
@@ -545,7 +548,7 @@ void MainWindow::requiredFileDownloadFileFinished(QNetworkReply* reply) {
     QString folder = settings.value("swg_folder").toString();
 
     if (QDir(folder).exists()) {
-    QFile file("required3.txt");
+    QFile file("downloadlist.txt");
 
     if (file.open(QIODevice::WriteOnly | QIODevice::Text)) {
         QTextStream stream(&file);
@@ -662,20 +665,20 @@ void MainWindow::startFullScan(bool forceConfigRestore) {
             return;
     }
 
-    requiredFilesCount = getRequiredFiles().size();
+    requiredFilesCount = MainWindow::getRequiredFiles("downloadlist.txt").size();
     currentReadFiles = 0;
 
     QSettings settings;
     QString folder = settings.value("swg_folder").toString();
     QDir checkDir(folder);
 
-    if (!checkDir.exists() || folder.isEmpty() || !FileScanner::checkSwgFolder(folder)) {
+    if (!checkDir.exists() || folder.isEmpty()) {
         QMessageBox::warning(this, "ERROR", "Invalid game folder!");
 
         return;
     }
 
-    bool restoreConfigFiles = forceConfigRestore ? true : QMessageBox::question(this, "Config files", "Do you want to restore the config files too?") == QMessageBox::Yes;
+    bool restoreConfigFiles = forceConfigRestore ? true : QMessageBox::question(this, "Config files", "Do you need to restore the config files too?  This will overwrite existing ones.") == QMessageBox::Yes;
 
     if (requiredFilesCount == 0 && !restoreConfigFiles)
         return;
@@ -687,7 +690,7 @@ void MainWindow::startFullScan(bool forceConfigRestore) {
     ui->progressBar_FullScan->setValue(0);
 
     ui->label_current_work->setStyleSheet("color:black");
-    ui->label_current_work->setText("Doing full scan...");
+    ui->label_current_work->setText("Begin Downloading...");
     ui->actionFolders->setEnabled(false);
 
     filesToDownload.clear();
@@ -706,7 +709,7 @@ void MainWindow::startFullScan(bool forceConfigRestore) {
     bool multiThreaded = settings.value("multi_threaded_full_scan", false).toBool();
 
     if (multiThreaded) {
-        fullScanWorkingThreads = getRequiredFiles().size();
+        fullScanWorkingThreads = MainWindow::getRequiredFiles("downloadlist.txt").size();
 
         runningFullScan = true;
         QtConcurrent::run(fileScanner, &FileScanner::fullScanMultiThreaded, restoreConfigFiles);
@@ -727,9 +730,9 @@ void MainWindow::startLoadBasicCheck() {
     ui->pushButton_Start->setEnabled(false);
 
     ui->label_current_work->setStyleSheet("color:black");
-    ui->label_current_work->setText("Checking files and updates..");
+    ui->label_current_work->setText("Checking for updates..");
 
-    requiredFilesCount = getRequiredFiles().size();
+    requiredFilesCount = MainWindow::getRequiredFiles("downloadlist.txt").size();
     currentReadFiles = 0;
 
     ui->progressBar_loading->setMaximum(requiredFilesCount);
@@ -931,7 +934,7 @@ void MainWindow::startKodanCalculator() {
     qDebug() << argsList;
 
     if (!QProcess::startDetached(wineBinary, argsList, QDir::currentPath())) {
-        QMessageBox::warning(this, "ERROR", "Could not launch game settings!");
+        QMessageBox::warning(this, "ERROR", "Could not launch profession calculator!");
     }
 #endif
 }
@@ -970,7 +973,7 @@ void MainWindow::downloadFinished() {
     nextFileToDownload = 0;
 
     if (filesToDownload.contains(patchUrl + "swgemu.cfg")) {
-        QMessageBox::information(this, "Game Settings", "SWGEmu game settings application will now launch, please set your resolution in the Graphics tab!");
+        QMessageBox::information(this, "Game Settings", "SWGMTGEmu game settings application will now launch, please set your resolution in the Graphics tab!");
 
         startSWGSetup();
     }
@@ -1025,18 +1028,18 @@ void MainWindow::loadFinished() {
         ui->actionFolders->setEnabled(true);
 
         ui->label_current_work->setStyleSheet("color:red");
-        ui->label_current_work->setText("Basic checks failed. Please run full scan to try and fix the issues.");
+        ui->label_current_work->setText("Please run full scan to try and fix this mysterious issue.");
         ui->progressBar_loading->setValue(ui->progressBar_loading->maximum());
     }
 }
 
-QVector<QPair<QString, qint64> > MainWindow::getRequiredFiles() {
+QVector<QPair<QString, qint64> > MainWindow::getRequiredFiles(QString rqd) {
     QSettings settings;
     QVector<QPair<QString, qint64> > data;
 
     //if (QDir(folder).exists()) {
     {
-        QFile file("required3.txt");
+        QFile file(rqd);
 
         if (file.exists()) {
             if (file.open(QIODevice::ReadOnly | QIODevice::Text)) {
@@ -1058,7 +1061,7 @@ QVector<QPair<QString, qint64> > MainWindow::getRequiredFiles() {
     }
 
 
-    QFile file(":/files/required3.txt");
+    QFile file(":/files/" + rqd);
 
     if (!file.open(QIODevice::ReadOnly | QIODevice::Text))
         return data;

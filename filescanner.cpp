@@ -13,7 +13,7 @@ bool FileScanner::checkSwgFolder(const QString& dirString) {
     if (!dir.exists())
         return false;
 
-    QVector<QPair<QString, qint64> > fileListToCheck = MainWindow::getRequiredFiles();
+    QVector<QPair<QString, qint64> > fileListToCheck = MainWindow::getRequiredFiles("downloadlist.txt");
 
     int fileCountToCheck = fileListToCheck.size() / 3;
     int currentFiles = 0;
@@ -38,7 +38,8 @@ bool FileScanner::checkSwgFolder(const QString& dirString) {
 }
 
 bool FileScanner::isARequiredFile(const QString& name) {
-    QVector<QPair<QString, qint64> > fileListToCheck = MainWindow::getRequiredFiles();
+    QString fileName = "downloadlist.txt";
+    QVector<QPair<QString, qint64> > fileListToCheck = MainWindow::getRequiredFiles(fileName);
 
     for (int i = 0; i < fileListToCheck.size(); ++i) {
         const QPair<QString, qint64>& data = fileListToCheck.at(i);
@@ -51,7 +52,8 @@ bool FileScanner::isARequiredFile(const QString& name) {
 }
 
 int FileScanner::loadAndBasicCheckFiles(QString swgFolder) {
-    QVector<QPair<QString, qint64> > fileListToCheck = MainWindow::getRequiredFiles();
+    QString fileName = "downloadlist.txt";
+    QVector<QPair<QString, qint64> > fileListToCheck = MainWindow::getRequiredFiles(fileName);
 
     for (int i = 0; i < fileListToCheck.size() && !mainWindow->doCancelWorkingThreads(); ++i) {
         const QPair<QString, qint64>& data = fileListToCheck.at(i);
@@ -79,7 +81,7 @@ int FileScanner::loadAndBasicCheckFiles(QString swgFolder) {
 }
 
 void FileScanner::fullScanMultiThreaded(bool ) {
-    QFile* file3 = mainWindow->getRequiredFilesFile("required3.txt");
+    QFile* file3 = mainWindow->getRequiredFilesFile("downloadlist.txt");
 
     QSettings settings;
     QString swgFolder = settings.value("swg_folder").toString();
@@ -138,12 +140,12 @@ void FileScanner::fullScanFile(const QString& file, const QString& name, qint64,
     QByteArray hash = crypto.result();
     QString calculatedHash = hash.toHex().toUpper().trimmed();
 
-    int compareResult = calculatedHash.compare(md5);
+    int compareResult = calculatedHash.compare(md5.toUpper().trimmed());
 
     if (compareResult != 0 && !mainWindow->doCancelWorkingThreads()) {
         qDebug() << "hash mismatch for:" << file << " compare result:" << compareResult;
 
-        qDebug() << "calculated hash of:" << file << " is:" << calculatedHash << " and specified one is:" << md5;
+        qDebug() << "calculated hash of:" << file << " is:" << calculatedHash << " and specified one is:" << md5.toUpper().trimmed();
 
         emit addFileToDownload(MainWindow::patchUrl + name);
     }
@@ -154,7 +156,7 @@ void FileScanner::fullScanFile(const QString& file, const QString& name, qint64,
 }
 
 int FileScanner::fullScanSingleThreaded(bool ) {
-    QFile* file = mainWindow->getRequiredFilesFile("required3.txt");
+    QFile* file = mainWindow->getRequiredFilesFile("downloadlist.txt");
 
     QSettings settings;
     QString swgFolder = settings.value("swg_folder").toString();
@@ -205,12 +207,12 @@ int FileScanner::fullScanSingleThreaded(bool ) {
         QByteArray hash = crypto.result();
         QString calculatedHash = hash.toHex().toUpper().trimmed();
 
-        int compareResult = calculatedHash.compare(md5);
+        int compareResult = calculatedHash.compare(md5.toUpper().trimmed());
 
         if (compareResult != 0 && !mainWindow->doCancelWorkingThreads()) {
             qDebug() << "hash mismatch for:" << file3 << " compare result:" << compareResult;
 
-            qDebug() << "calculated hash of:" << file3 << " is:" << calculatedHash << " and specified one is:" << md5;
+            qDebug() << "calculated hash of:" << file3 << " is:" << calculatedHash << " and specified one is:" << md5.toUpper().trimmed();
             res = 2;
 
             mainWindow->appendToFilesToDownloadStringList(MainWindow::patchUrl + name);
@@ -225,5 +227,3 @@ int FileScanner::fullScanSingleThreaded(bool ) {
     return res;
 }
 
-
-mainWindow->

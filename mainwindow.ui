@@ -2417,6 +2417,9 @@ p, li { white-space: pre-wrap; }
              </item>
              <item row="2" column="0">
               <widget class="QProgressBar" name="donationBar">
+               <property name="enabled">
+                <bool>false</bool>
+               </property>
                <property name="palette">
                 <palette>
                  <active>
@@ -2692,7 +2695,7 @@ p, li { white-space: pre-wrap; }
      <normaloff>:/img/installfromswg.svg</normaloff>:/img/installfromswg.svg</iconset>
    </property>
    <property name="text">
-    <string>Install from SWG</string>
+    <string>Begin Installation</string>
    </property>
   </action>
  </widget>

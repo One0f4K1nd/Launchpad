@@ -25,7 +25,7 @@ GameMods::~GameMods() {
 void GameMods::checkMods() {
     checkMovementMod();
     if (!checkFpsMod())
-        QMessageBox::warning(this, "FPS", "It seems that you don't have the original SWGEmu.exe, FPS overrider will be disabled");
+        QMessageBox::warning(this, "FPS", "It seems that you don't have the original SWGMTGEmu.exe, FPS overrider will be disabled");
 }
 
 bool GameMods::checkMovementMod() {
@@ -42,7 +42,7 @@ bool GameMods::checkFpsMod() {
     QSettings settings;
     QString swgFolder = settings.value("swg_folder").toString();
 
-    QFile executable(swgFolder + "/SWGEmu.exe");
+    QFile executable(swgFolder + "/SWGMTGEmu.exe");
 
     bool returnVal = false;
 
@@ -90,7 +90,7 @@ void GameMods::setFpsMod(int fps) {
     QSettings settings;
     QString swgFolder = settings.value("swg_folder").toString();
 
-    QFile executable(swgFolder + "/SWGEmu.exe");
+    QFile executable(swgFolder + "/SWGMTGEmu.exe");
 
     bool modResult = false;
 
@@ -122,7 +122,7 @@ void GameMods::setFpsMod(int fps) {
     executable.close();
 
     if (!modResult) {
-        QMessageBox::warning(this, "ERROR", "Could not patch SWGEmu.exe to override fps setting!");
+        QMessageBox::warning(this, "ERROR", "Could not patch SWGMTGEmu.exe to override fps setting!");
     }
 }
 
