@@ -12,16 +12,16 @@ class AddLoginServer : public QDialog
   Q_OBJECT
   
 public:
-  explicit AddLoginServer(QWidget *parent = 0);
+  explicit AddLoginServer(QWidget *parent = nullptr);
   ~AddLoginServer();
 
   QString getName();
   QString getHost();
-  quint16 getPort();
+  QString getPort();
 
   void setName(const QString& name);
   void setHost(const QString& host);
-  void setPort(quint16 port);
+  void setPort(const QString& port);
 
   void disableNameEdit();
   

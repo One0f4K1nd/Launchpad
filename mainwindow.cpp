@@ -22,6 +22,7 @@
 #include "macroeditor.h"
 //#include <QWebElement>
 //#include <QWebFrame>
+#include <QInputDialog>
 #include <QNetworkConfiguration>
 
 #include <QSsl>
@@ -48,23 +49,25 @@
 
 using namespace std;
 
+//#define ENABLE_NEWS_BUTTON
 #define ENABLE_MACRO_EDITOR
 
-//#define ENABLE_NEWS_BUTTON
+//QSettings MainWindow::settingsOptions;
 
-#define MAIN_SERVER "192.168.0.116"
-#define WEB_PREFIX "http"
+QString MainWindow::defaultProtocol;
+QString MainWindow::defaultLoginAddress;
+QString MainWindow::defaultLoginPort;
 
-#define BASILISK_STATUS_XML WEB_PREFIX "://" MAIN_SERVER "/supernova_status.xml" // i did not disable this yet
+QString MainWindow::selectedLoginAddress;
+QString MainWindow::selectedPort;
+QString MainWindow::swgFolder;
 
-QString MainWindow::patchUrl = WEB_PREFIX "://" MAIN_SERVER "/tre/"; // Insert download URL here
-QString MainWindow::newsUrl = "https://modthegalaxy.com/index.php";
-QString MainWindow::gameExecutable = "SWGMTGEmu.exe";
-#ifdef Q_OS_WIN32
-QString MainWindow::selfUpdateUrl = WEB_PREFIX "://" MAIN_SERVER "/setup.cfg"; // Insert update URL here
-#else
-QString MainWindow::selfUpdateUrl = WEB_PREFIX "://" MAIN_SERVER "/setuplinux86_64.cfg"; // Insert linux update URL here
-#endif
+QString MainWindow::patchUrl;
+QString MainWindow::newsUrl;
+QString MainWindow::gameExecutable;
+QString MainWindow::selfUpdateUrl;
+QString MainWindow::swg_install_folder;
+
 const QString MainWindow::version = "0.24";
 SOCKET MainWindow::s = NULL;
 int MainWindow::status = 0;
@@ -80,6 +83,8 @@ MainWindow::MainWindow(QWidget *parent) :
     QCoreApplication::setOrganizationName("SWGMTGEmu");
     QCoreApplication::setOrganizationDomain("modthegalaxy.com");
     QCoreApplication::setApplicationName("SWGMTGEmu Launchpad");
+
+    QSettings settingsOptions;
 
     requiredFilesCount = 0;
     nextFileToDownload = 0;
@@ -99,6 +104,62 @@ MainWindow::MainWindow(QWidget *parent) :
     closeAction = new QAction("Close", NULL);
     systemTrayMenu->addAction(closeAction);
     systemTrayIcon->setContextMenu(systemTrayMenu);
+
+    this->defaultProtocol = "http";
+    this->defaultLoginPort = "44453";
+    settingsOptions.setValue("default_login_port", "44453");
+    //this->defaultLoginAddress = "127.0.0.1";
+    if (this->defaultLoginAddress.isNull() || this->defaultLoginAddress.isEmpty()) {
+        bool ok;
+        // Get default IP from user
+        QString text = QInputDialog::getText(0, "SWGMTGEmu Error: No Default IP Address Set!", "Enter IP Address: ",QLineEdit::Normal, "", &ok);
+        qDebug() << "input text = " << text;
+        if (ok && text.isEmpty()) {
+            //try again
+            QMessageBox::information (0, "SWGMTGEmu Error!", "Please retry to add the ip address.");
+            return;
+        } else {
+            settingsOptions.setValue("default_login_server", text);
+            settingsOptions.setValue("selected_login_server", text);
+            this->defaultserver = text;
+            this->defaultLoginAddress = text;
+            this->selectedLoginAddress = text;
+        }
+
+    } else {
+        this->defaultLoginAddress = settingsOptions.value("default_login_address").toString();
+        qDebug() << "get current value for default_login_address from settings" << this->defaultLoginAddress;
+    }
+
+    updateLoginServerList();
+    this->newsUrl = "https://modthegalaxy.com/index.php";
+    this->gameExecutable = "SWGMTGEmu.exe";
+    this->swg_install_folder = settingsOptions.value("swg_install_folder").toString();
+    this->selectedLoginAddress = settingsOptions.value("selected_login_address").toString();
+    if (this->selectedPort.isEmpty() || this->selectedPort.isNull()) {
+        this->selectedPort = settingsOptions.value("default_login_port").toString();
+    } else {
+        this->selectedPort = settingsOptions.value("selected_port").toString();
+    }
+
+    this->swgFolder = settingsOptions.value("swg_folder").toString();
+    if(this->selectedLoginAddress.size() == 0) {
+        this->patchUrl = this->defaultProtocol + "://" + this->defaultLoginAddress + "/tre/";
+#ifdef Q_OS_WIN32
+        this->selfUpdateUrl = this->defaultProtocol + "://" + this->defaultLoginAddress + "/setup.cfg";
+#else
+        this->selfUpdateUrl = this->defaultProtocol + "://" + this->defaultLoginAddress + "/setuplinux86_64.cfg";
+#endif
+
+    } else {
+        this->patchUrl = this->defaultProtocol + "://" + this->selectedLoginAddress + "/tre/";
+#ifdef Q_OS_WIN32
+        this->selfUpdateUrl = this->defaultProtocol + "://" + this->selectedLoginAddress + "/setup.cfg";
+#else
+        this->selfUpdateUrl = this->defaultProtocol + "://" + this->selectedLoginAddress + "/setuplinux86_64.cfg";
+#endif
+
+    }
 
 #ifdef ENABLE_NEWS_BUTTON
     QToolButton* newsButton = new QToolButton(ui->mainToolBar);
@@ -205,9 +266,6 @@ MainWindow::MainWindow(QWidget *parent) :
     tabBar->setTabButton(0, QTabBar::RightSide, 0);
     tabBar->setTabButton(0, QTabBar::LeftSide, 0);
 
-    QSettings settingsOptions;
-
-    QString swgFolder = settingsOptions.value("swg_folder").toString();
     bool multipleInstances = settingsOptions.value("multiple_instances").toBool();
 
     ui->checkBox_instances->setChecked(multipleInstances);
@@ -220,33 +278,33 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(&loadWatcher, SIGNAL(finished()), this, SLOT(loadFinished()));
     connect(ui->pushButton_FullScan, SIGNAL(clicked()), this, SLOT(startFullScan()));
 
-    loginServers->reloadServers();
-    updateLoginServerList();
-
+//    loginServers->reloadServers();
+//    updateLoginServerList();
 
     silentSelfUpdater = new SelfUpdater(true, this);
 
     if (!swgFolder.isEmpty()) {
         startLoadBasicCheck();
     } else {
-#ifdef Q_OS_WIN32
-        QDir dir("E:/SWGMTGEmu");
+//#ifdef Q_OS_WIN32
+QString pathToInstall = settingsOptions.value("swg_install_folder").toString();
+        QDir dir(pathToInstall);
 
-        if (dir.exists() && FileScanner::checkSwgFolder("E:/SWGMTGEmu")) {
-            qDebug() << "swg_folder : " << "E:/SWGMTGEmu exists!";
-            settingsOptions.setValue("swg_folder", "E:/SWGMTGEmu");
+        if (FileScanner::checkSwgFolder(dir.path())) {
+            qDebug() << pathToInstall << " : " << "exists!";
+            settingsOptions.setValue("swg_folder", pathToInstall);
             startLoadBasicCheck();
-        }  else
-
-#endif
+        }  else {
+//#endif
             QMessageBox::warning(this, "Error", "Please set the swgemu folder in Settings->Options or install using Settings->Install From SWG option");
+        }
     }
-
 
     restoreGeometry(settingsOptions.value("mainWindowGeometry").toByteArray());
     restoreState(settingsOptions.value("mainWindowState").toByteArray());
 
-    QString savedLogin = settingsOptions.value("selected_login_server", "").toString();
+    QString savedLogin = settingsOptions.value("selected_login_server").toString();
+    qDebug() << "savedLogin = " << savedLogin;
 
     if (!savedLogin.isEmpty()) {
         int idx = ui->comboBox_login->findText(savedLogin);
@@ -260,6 +318,8 @@ MainWindow::MainWindow(QWidget *parent) :
     //requiredFilesNetworkManager.get(QNetworkRequest(QUrl(patchUrl + "downloadlist.txt")));
     silentSelfUpdater->silentCheck();
 
+    loginServers->reloadServers();
+    updateLoginServerList();
 }
 
 MainWindow::~MainWindow() {
@@ -343,81 +403,116 @@ void MainWindow::deleteProfiles() {
 }
 
 int MainWindow::readBasiliskServerStatus() {
-    //QNetworkRequest request = QNetworkRequest(QUrl(BASILISK_STATUS_XML));
 
-    /*QSslConfiguration ssl = request.sslConfiguration();
-    ssl.setSslOption(QSsl::SslOptionDisableServerNameIndication, true);
-    request.setSslConfiguration(ssl);*/
+    int recv_size;
 
-    //networkAccessManager.get(request);
+    QCoreApplication::setOrganizationName("SWGMTGEmu");
+    QCoreApplication::setOrganizationDomain("modthegalaxy.com");
+    QCoreApplication::setApplicationName("SWGMTGEmu Launchpad");
 
-int recv_size;
+    QSettings settingsOptions;
 
-qDebug() << "\nInitialising Winsock...";
+    qDebug() << "\nInitialising Winsock...";
 
-if (WSAStartup(MAKEWORD(2,2),&wsa) != 0)
-{
-    qDebug() << "Failed.";
-    exit;
+
+    if (WSAStartup(MAKEWORD(2, 2), & wsa) != 0) {
+        qDebug() << "Failed.";
+        ui->label_current_work->setStyleSheet("color:red");
+        ui->label_current_work->setText("Winsock failed to initialise!");
+        return 3;
+    }
+
+    qDebug() << "Initialised.\n";
+
+    //Create a socket
+    if ((s = socket(AF_INET, SOCK_STREAM, 0)) == INVALID_SOCKET) {
+        qDebug() << "Could not create socket : " << WSAGetLastError();
+        ui->label_current_work->setStyleSheet("color:red");
+        ui->label_current_work->setText("Winsock failed to initialise!");
+        return 3;
+    }
+
+    qDebug() << "Socket created.\n";
+
+    //connect to status server port with default or selected connection settings
+    QByteArray array;
+    char* buffer;
+    if (settingsOptions.value("selected_login_server").toString().isNull() || settingsOptions.value("selected_login_server").toString().isEmpty()) {
+        array = settingsOptions.value("default_login_server").toString().toUtf8();
+        buffer = array.data();
+    } else {
+        array = settingsOptions.value("selected_login_server").toString().toUtf8();
+        buffer = array.data();
+    }
+    server.sin_addr.s_addr = inet_addr(array.data());
+    server.sin_family = AF_INET;
+    server.sin_port = htons(44455);
+
+    //pton
+    //InetPton(AF_INET, _T("192.168.1.1"), &RecvAddr.sin_addr.s_addr);
+
+    //Connect to remote server
+    //try to connect...
+
+    status = ::connect(s, (struct sockaddr * ) & server, sizeof(server));
+
+    if (status < 0) {
+        qDebug() << "Error: connect to " << array.data() << " returned: " << status;
+        ui->label_current_work->setStyleSheet("color:red");
+        ui->label_current_work->setText("Failed to connect to remote host!");
+        return status;
+    }
+
+    qDebug() << "Connected";
+
+    //Send some data
+    message = "GET / HTTP/1.1\r\n\r\n";
+    if (send(s, message, strlen(message), 0) < 0) {
+        qDebug() << "Send failed";
+        ui->label_current_work->setStyleSheet("color:red");
+        ui->label_current_work->setText("Sending header to host failed!");
+        return 3;
+    }
+    qDebug() << "Data Send\n";
+
+    //Receive a reply from the server
+    if ((recv_size = recv(s, server_reply, 2000, 0)) == SOCKET_ERROR) {
+        qDebug() << "recv failed";
+        ui->label_current_work->setStyleSheet("color:red");
+        ui->label_current_work->setText("No reply from server!");
+        return 3;
+    } else {
+
+        qDebug() << "Reply received\n";
 }
 
-qDebug() << "Initialised.\n";
+    //Add a NULL terminating character to make it a proper string before printing
+    server_reply[recv_size] = '\0';
+    QByteArray theReply = server_reply;
+    QString unfilteredReply = theReply.toStdString().c_str();
+    QString filteredReply = MainWindow::stripUnicode(unfilteredReply);
+    qDebug() << filteredReply;
 
-//Create a socket
-if((s = socket(AF_INET , SOCK_STREAM , 0 )) == INVALID_SOCKET)
-{
-    qDebug() << "Could not create socket : " << WSAGetLastError();
+    //ui->textBrowser->setText(QString::fromUtf8(server_reply));
+
+    //transferXMLStatus();
+
+
+    emit finished();
+
+    return status;
 }
 
-qDebug() << "Socket created.\n";
-
-
-server.sin_addr.s_addr = inet_addr("192.168.0.116");
-server.sin_family = AF_INET;
-server.sin_port = htons( 44455 );
-
-//Connect to remote server
-//try to connect...
-
-
-status = ::connect(s , (struct sockaddr *)&server , sizeof(server));
-
-if(status < 0)
+//bool MainWindow::invalidChar(char c)
+//{
+//    return !isprint( static_cast<unsigned char>( c ) );
+//}
+QString MainWindow::stripUnicode(QString &str)
 {
-    qDebug() << "connect error";
-    exit;
-}
-
-qDebug() << "Connected";
-
-//Send some data
-message = "GET / HTTP/1.1\r\n\r\n";
-if( send(s , message , strlen(message) , 0) < 0)
-{
-    qDebug() << "Send failed";
-    exit;
-}
-qDebug() << "Data Send\n";
-
-//Receive a reply from the server
-if((recv_size = recv(s , server_reply , 2000 , 0)) == SOCKET_ERROR)
-{
-    qDebug() << "recv failed";
-}
-
-qDebug() << "Reply received\n";
-
-//Add a NULL terminating character to make it a proper string before printing
-server_reply[recv_size] = '\0';
-qDebug() << server_reply;
-
-//ui->textBrowser->setText(QString::fromUtf8(server_reply));
-
-//transferXMLStatus();
-
-emit finished();
-
-return status;
+    //str.erase(remove_if(str.begin(),str.end(), MainWindow::invalidChar), str.end());
+    str.remove("\u0001");
+    str.remove("\u0000");
+    return str;
 }
 
 void MainWindow::checkForUpdates() {
@@ -428,26 +523,48 @@ void MainWindow::checkForUpdates() {
 void MainWindow::updateLoginServerList() {
     ui->comboBox_login->clear();
 
-    QSettings settings;
-    settings.beginWriteArray("login_servers");
+    QCoreApplication::setOrganizationName("SWGMTGEmu");
+    QCoreApplication::setOrganizationDomain("modthegalaxy.com");
+    QCoreApplication::setApplicationName("SWGMTGEmu Launchpad");
+
+    QSettings settingsCurrent;
+
+    QString defaultserver = settingsCurrent.value("default_login_server").toString();
+    QString defaultport = settingsCurrent.value("default_login_port").toString();
+
+    settingsCurrent.beginWriteArray("login_servers");
+
+    //LoginServers* loginServers;
 
     for (int i = 0; i < loginServers->count(); ++i) {
-        LoginServer* server = loginServers->getServer(i);
-        settings.setArrayIndex(i);
+        LoginServer* serverid = loginServers->getServer(i);
+        settingsCurrent.setArrayIndex(i);
 
-        ui->comboBox_login->addItem(server->text());
+        ui->comboBox_login->addItem(serverid->text());
+        if(serverid->text().isEmpty() || serverid->text().isNull()) {
+            settingsCurrent.setValue("name", defaultserver);
+        } else {
+            settingsCurrent.setValue("name", serverid->text());
+        }
+        if(serverid->getHost().isEmpty() || serverid->text().isNull()) {
+            settingsCurrent.setValue("host", defaultserver);
+        } else {
+            settingsCurrent.setValue("host", serverid->getHost());
+        }
+        if(serverid->getHost().isEmpty() || serverid->text().isNull()) {
+            settingsCurrent.setValue("port", defaultport);
+        } else {
+            settingsCurrent.setValue("port", serverid->getPort());
+        }
 
-        settings.setValue("name", server->text());
-        settings.setValue("host", server->getHost());
-        settings.setValue("port", server->getPort());
     }
 
-    settings.endArray();
+    settingsCurrent.endArray();
 }
 
 void MainWindow::updateServerStatus() {
     ui->textBrowser->clear();
-
+    //updateLoginServerList();
     readBasiliskServerStatus();
     //readNovaServerStatus();
 }
@@ -749,9 +866,9 @@ void MainWindow::runUpdateCheckTimer() {
     if (--updateTimeCounter >= 0) {
         QTimer::singleShot(1000, this, SLOT(runUpdateCheckTimer()));
 
-        ui->pushButton_Start->setText("Start (" + QString::number(updateTimeCounter) + ")");
+        ui->pushButton_Start->setText("Play (" + QString::number(updateTimeCounter) + ")");
     } else {
-        ui->pushButton_Start->setText("Start");
+        ui->pushButton_Start->setText("Play");
 
         if (updateTimeCounter == -1) {
             enableStart();
@@ -980,7 +1097,7 @@ void MainWindow::downloadFinished() {
 
     filesToDownload.clear();
 
-    ui->label_current_work->setStyleSheet("color:green");
+    ui->label_current_work->setStyleSheet("color:yellow");
     ui->label_current_work->setText("Download finished");
     ui->pushButton_Start->setEnabled(true);
     ui->actionFolders->setEnabled(true);
@@ -995,10 +1112,10 @@ void MainWindow::showSettings() {
 
 void MainWindow::enableStart() {
     ui->pushButton_Start->setEnabled(true);
-    ui->pushButton_Start->setText("Start");
+    ui->pushButton_Start->setText("Play");
     ui->actionFolders->setEnabled(true);
 
-    ui->label_current_work->setStyleSheet("color:green");
+    ui->label_current_work->setStyleSheet("color:yellow");
     ui->label_current_work->setText("Basic checks passed.");
 }
 
@@ -1017,7 +1134,7 @@ void MainWindow::loadFinished() {
         } else {
             updateTimeCounter = 5;
 
-            ui->pushButton_Start->setText("Start (" + QString::number(updateTimeCounter) + ")");
+            ui->pushButton_Start->setText("Play (" + QString::number(updateTimeCounter) + ")");
 
             QTimer::singleShot(1000, this, SLOT(runUpdateCheckTimer()));
 
@@ -1143,7 +1260,7 @@ void MainWindow::startSWG() {
     QString loginAddress = parser->getStringConfigValue("ClientGame", "loginServerAddress0", "loginServerAddress0");
     QString port = parser->getStringConfigValue("ClientGame", "loginServerAddress0", "loginServerPort0");
 
-    if (loginAddress != server->getHost() || port != QString::number(server->getPort())) {
+    if (loginAddress != server->getHost() || port != server->getPort()) {
 #ifdef Q_OS_WIN32
         QFile loginFile(folder + "\\swgemu_login.cfg");
 #else
@@ -1169,12 +1286,12 @@ void MainWindow::startSWG() {
     if (server != NULL)
         arguments.append("loginServerAddress0=" + server->getHost());
     else
-        arguments.append("loginServerAddress0=" + LoginServers::defaultLoginAddress);
+        arguments.append("loginServerAddress0=" + this->defaultLoginAddress);
 
     if (server == NULL)
-        arguments.append("loginServerPort0=" + QString::number(LoginServers::defaultLoginPort));
+        arguments.append("loginServerPort0=" + this->defaultLoginPort);
     else
-        arguments.append("loginServerPort0=" + QString::number(server->getPort()));
+        arguments.append("loginServerPort0=" + server->getPort());
 
     arguments.append("-s");
     arguments.append("Station");
@@ -1202,7 +1319,7 @@ void MainWindow::startSWG() {
     gameProcesses.append(process);
     QTabBar* bar = ui->tabWidget->tabBar();
     int tabIndex = ui->tabWidget->indexOf(process);
-    bar->setTabTextColor(tabIndex, Qt::green);
+    bar->setTabTextColor(tabIndex, Qt::yellow);
     bar->setTabIcon(tabIndex, QIcon(":/img/tab.svg"));
 
     bool startResult = process->start(folder, gameExecutable, arguments);
@@ -1309,11 +1426,11 @@ void MainWindow::statusXmlIsReady() {
 
 void MainWindow::webPageLoadFinished(bool ok) {
     if (!ok) {
-        ui->statusBar->showMessage("Error loading 192.168.0.116");
+        ui->statusBar->showMessage("Error loading " + this->selectedLoginAddress);
         return;
     }
 
-    ui->statusBar->showMessage("192.168.0.116 loaded.");
+    ui->statusBar->showMessage(this->selectedLoginAddress + " loaded.");
 }
 
 void MainWindow::updateDonationMeter() {
@@ -1356,12 +1473,12 @@ void MainWindow::closeEvent(QCloseEvent *event) {
 
     ui->statusBar->showMessage("Threads canceled.");
 
-    QSettings settings;
-    settings.setValue("mainWindowGeometry", saveGeometry());
-    settings.setValue("mainWindowState", saveState());
+    QSettings settingsOptions;
+    settingsOptions.setValue("mainWindowGeometry", saveGeometry());
+    settingsOptions.setValue("mainWindowState", saveState());
 
     QString currentLogin = ui->comboBox_login->currentText();
-    settings.setValue("selected_login_server", currentLogin);
+    settingsOptions.setValue("selected_login_server", currentLogin);
 
     QMainWindow::closeEvent(event);
 }

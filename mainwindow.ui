@@ -1782,7 +1782,7 @@ p, li { white-space: pre-wrap; }
                   </palette>
                  </property>
                  <property name="text">
-                  <string>Start</string>
+                  <string>Play</string>
                  </property>
                  <property name="icon">
                   <iconset resource="rsources.qrc">

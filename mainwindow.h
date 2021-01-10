@@ -12,6 +12,7 @@
 #include <QSystemTrayIcon>
 #include <QAtomicInt>
 #include <QToolButton>
+#include <QSettings>
 #ifdef Q_OS_WIN32
 #include <WinSock2.h>
 #else
@@ -38,12 +39,25 @@ class MainWindow : public QMainWindow
 public:
   explicit MainWindow(QWidget *parent = nullptr);
   ~MainWindow();
+  static bool invalidChar(char c);
+  static QString stripUnicode(QString &str);
+//  static QSettings settingsOptions;
+
+  static QString defaultProtocol;
+  static QString defaultLoginAddress;
+  static QString defaultLoginPort;
+
+  static QString selectedLoginAddress;
+  static QString selectedPort;
+
+  static QString swgFolder;
 
   static QString patchUrl;
   static QString newsUrl;
   static QString gameExecutable;
   static const QString version;
-  static QString selfUpdateUrl;  
+  static QString selfUpdateUrl;
+  static QString swg_install_folder;
   WSADATA wsa;
   struct sockaddr_in server;
   static SOCKET s;
@@ -121,6 +135,8 @@ signals:
 private:
   Ui::MainWindow *ui;
   LoginServers* loginServers;
+  QString defaultserver;
+  QString defaultport;
   Settings* settings;
   QNetworkAccessManager networkAccessManager;
   QNetworkAccessManager clientFilesNetworkAccessManager;

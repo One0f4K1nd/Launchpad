@@ -4,14 +4,14 @@ Downloader::Downloader(QObject *parent) :
 {
 }
 
-void Downloader::doDownload()
+void Downloader::doDownload(QString downloadListTarget)
 {
     manager = new QNetworkAccessManager(this);
 
     connect(manager, SIGNAL(finished(QNetworkReply*)),
             this, SLOT(replyFinished(QNetworkReply*)));
 
-    manager->get(QNetworkRequest(QUrl("http://192.168.0.116/tre/")));
+    manager->get(QNetworkRequest(QUrl(downloadListTarget)));
 }
 
 void Downloader::replyFinished (QNetworkReply *reply)

@@ -7,13 +7,11 @@
 #include "mainwindow.h"
 #include <QSettings>
 
-QString LoginServers::defaultLoginAddress = "192.168.0.116";
-quint16 LoginServers::defaultLoginPort = 44453;
-
 LoginServers::LoginServers(QWidget *parent) :
     QDialog(parent),
     ui(new Ui::LoginServers) {
     ui->setupUi(this);
+    QSettings settings;
 
     connect(ui->pushButton, SIGNAL(clicked()), this, SLOT(addServer()));
     connect(ui->pushButton_2, SIGNAL(clicked()), this, SLOT(removeServer()));
@@ -39,18 +37,19 @@ void LoginServers::reloadServers() {
 
         QString name = settings.value("name").toString();
         QString host = settings.value("host").toString();
-        unsigned short port = (unsigned short) settings.value("port").toUInt();
+        QString port = settings.value("port").toString();
 
         addServer(name, host, port);
     }
 
-    if (ui->listWidget->count() == 0)
-        addServer("192.168.0.116", defaultLoginAddress, defaultLoginPort);
-
+    if (ui->listWidget->count() == 0) {
+        QString hostip = settings.value("selected_login_server").toString();
+        LoginServers::addServer(hostip, MainWindow::defaultLoginAddress, MainWindow::defaultLoginPort);
+    }
     settings.endArray();
 }
 
-void LoginServers::addServer(const QString&name, const QString& host, quint16 port) {
+void LoginServers::addServer(const QString& name, const QString& host, const QString& port) {
     LoginServer* server = new LoginServer(name, host, port);
 
     if (ui->listWidget->count() % 2 == 0) {
@@ -61,6 +60,7 @@ void LoginServers::addServer(const QString&name, const QString& host, quint16 po
 }
 
 void LoginServers::removeServer() {
+    QSettings settings;
     if (ui->listWidget->count() == 1) {
         QMessageBox::warning(this, "Error", "Need at least one login server!");
         return;
@@ -77,8 +77,8 @@ void LoginServers::removeServer() {
         return;
     }
 
-    if (server->getName() == "192.168.0.116") {
-        QMessageBox::warning(this, "Error", "Can't delete 192.168.0.116 server!");
+    if (server->getName() == settings.value("selected_login_server").toString()) {
+        QMessageBox::warning(this, "Error", "Can't delete " + settings.value("selected_login_server").toString() + " server!");
         return;
     }
 
@@ -158,11 +158,11 @@ void LoginServers::addServer() {
     if (!res)
         return;
 
-    if (getServer(dialog.getName()) != NULL) {
+    if (getServer(dialog.getName()) != nullptr) {
         QMessageBox::warning(this, "Error", "A login server with that name already exists!");
 
         return;
     }
 
-    addServer(dialog.getName().trimmed(), dialog.getHost().trimmed(), dialog.getPort());
+    addServer(dialog.getName().trimmed(), dialog.getHost().trimmed(), dialog.getPort().trimmed());
 }

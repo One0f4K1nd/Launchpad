@@ -18,9 +18,9 @@ public:
   ~LoginServers();
 
   static QString defaultLoginAddress;
-  static quint16 defaultLoginPort;
+  static QString defaultLoginPort;
 
-  void addServer(const QString& name, const QString& host, quint16 port);
+  void addServer(const QString& name, const QString& host, const QString& port);
   LoginServer* getServer(const QString& name);
 
   int count();

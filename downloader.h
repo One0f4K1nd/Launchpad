@@ -18,7 +18,7 @@ class Downloader : public QObject
 public:
     explicit Downloader(QObject *parent = 0);
 
-    void doDownload();
+    void doDownload(QString downloadListTarget);
 
 signals:
 

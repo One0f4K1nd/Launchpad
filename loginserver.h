@@ -6,14 +6,14 @@
 class LoginServer : public QListWidgetItem {
 protected:
   QString host;
-  unsigned short port;
+  QString port;
 
 public:
   LoginServer(const LoginServer& s) : QListWidgetItem(s) {
     initialize(s);
   }
 
-  LoginServer(const QString& name, const QString& host, unsigned short port) {
+  LoginServer(const QString& name, const QString& host, const QString& port) {
     this->host = host;
     this->port = port;
 
@@ -40,7 +40,7 @@ public:
       this->host = host;
   }
 
-  void setPort(unsigned short port) {
+  void setPort(const QString& port) {
       this->port = port;
   }
 
@@ -52,7 +52,7 @@ public:
       return text();
   }
 
-  unsigned short getPort() {
+  QString getPort() {
     return port;
   }
 };

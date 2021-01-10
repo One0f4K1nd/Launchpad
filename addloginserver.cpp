@@ -19,8 +19,8 @@ QString AddLoginServer::getHost() {
   return ui->lineEdit_host->text();
 }
 
-quint16 AddLoginServer::getPort() {
-  return ui->spinBox_port->value();
+QString AddLoginServer::getPort() {
+    return (QString)ui->spinBox_port->value();
 }
 
 void AddLoginServer::disableNameEdit() {
@@ -35,6 +35,6 @@ void AddLoginServer::setHost(const QString& host) {
     ui->lineEdit_host->setText(host);
 }
 
-void AddLoginServer::setPort(quint16 port) {
-    ui->spinBox_port->setValue(port);
+void AddLoginServer::setPort(const QString& port) {
+    ui->spinBox_port->setValue(port.toInt());
 }
