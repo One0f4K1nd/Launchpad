@@ -20,7 +20,7 @@ QString AddLoginServer::getHost() {
 }
 
 QString AddLoginServer::getPort() {
-    return (QString)ui->spinBox_port->value();
+    return QString::number(ui->spinBox_port->value());
 }
 
 void AddLoginServer::disableNameEdit() {
@@ -37,4 +37,9 @@ void AddLoginServer::setHost(const QString& host) {
 
 void AddLoginServer::setPort(const QString& port) {
     ui->spinBox_port->setValue(port.toInt());
+}
+
+void AddLoginServer::on_lineEdit_host_textChanged(const QString &arg1)
+{
+    ui->lineEdit_name->setText(arg1);
 }

@@ -125,6 +125,7 @@ public:
 
   void appendToFilesToDownloadStringList(const QString& file) {
       filesToDownload.append(file);
+      addFileToDownloadSlot(file);
   }
 
 signals:
@@ -171,6 +172,8 @@ private:
 
 protected:
   void closeEvent(QCloseEvent *event);
+  private slots:
+
 };
 
 #endif // MAINWINDOW_H

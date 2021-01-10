@@ -108,8 +108,9 @@ MainWindow::MainWindow(QWidget *parent) :
     this->defaultProtocol = "http";
     this->defaultLoginPort = "44453";
     settingsOptions.setValue("default_login_port", "44453");
+    QString lastloginserver = settingsOptions.value("last_login_server").toString();
     //this->defaultLoginAddress = "127.0.0.1";
-    if (this->defaultLoginAddress.isNull() || this->defaultLoginAddress.isEmpty()) {
+    if (settingsOptions.value("default_login_server").isNull() || settingsOptions.value("default_login_server").toString() == "") {
         bool ok;
         // Get default IP from user
         QString text = QInputDialog::getText(0, "SWGMTGEmu Error: No Default IP Address Set!", "Enter IP Address: ",QLineEdit::Normal, "", &ok);
@@ -126,11 +127,27 @@ MainWindow::MainWindow(QWidget *parent) :
             this->selectedLoginAddress = text;
         }
 
+        QString savedLogin = settingsOptions.value("selected_login_server").toString();
+        qDebug() << "savedLogin = " << savedLogin;
+
+        if (!savedLogin.isEmpty()) {
+            int idx = ui->comboBox_login->findText(savedLogin);
+
+            if (idx >= 0) {
+                ui->comboBox_login->setCurrentIndex(idx);
+            }
+        }
+
     } else {
-        this->defaultLoginAddress = settingsOptions.value("default_login_address").toString();
+        this->defaultserver = settingsOptions.value("default_login_server").toString();
+        this->defaultLoginAddress = settingsOptions.value("default_login_server").toString();
+        this->selectedLoginAddress = settingsOptions.value("selected_login_server").toString();
+
         qDebug() << "get current value for default_login_address from settings" << this->defaultLoginAddress;
     }
-
+    if (lastloginserver.isNull() || lastloginserver.isEmpty()){
+        settingsOptions.setValue("last_login_server", settingsOptions.value("default_login_server").toString());
+    }
     updateLoginServerList();
     this->newsUrl = "https://modthegalaxy.com/index.php";
     this->gameExecutable = "SWGMTGEmu.exe";
@@ -303,17 +320,6 @@ QString pathToInstall = settingsOptions.value("swg_install_folder").toString();
     restoreGeometry(settingsOptions.value("mainWindowGeometry").toByteArray());
     restoreState(settingsOptions.value("mainWindowState").toByteArray());
 
-    QString savedLogin = settingsOptions.value("selected_login_server").toString();
-    qDebug() << "savedLogin = " << savedLogin;
-
-    if (!savedLogin.isEmpty()) {
-        int idx = ui->comboBox_login->findText(savedLogin);
-
-        if (idx >= 0) {
-            ui->comboBox_login->setCurrentIndex(idx);
-        }
-    }
-
     requiredFilesNetworkManager.get(QNetworkRequest(QUrl(patchUrl + "downloadlist.txt")));
     //requiredFilesNetworkManager.get(QNetworkRequest(QUrl(patchUrl + "downloadlist.txt")));
     silentSelfUpdater->silentCheck();
@@ -430,9 +436,9 @@ int MainWindow::readBasiliskServerStatus() {
         ui->label_current_work->setStyleSheet("color:red");
         ui->label_current_work->setText("Winsock failed to initialise!");
         return 3;
+    } else {
+        qDebug() << "Socket created.\n";
     }
-
-    qDebug() << "Socket created.\n";
 
     //connect to status server port with default or selected connection settings
     QByteArray array;
@@ -642,6 +648,7 @@ QFile* MainWindow::getRequiredFilesFile(QString fileName) {
 void MainWindow::addFileToDownloadSlot(QString file) {
     //todo
     filesToDownload.append(file);
+    emit startDownload();
 }
 
 void MainWindow::showAboutDialog() {
@@ -683,7 +690,7 @@ void MainWindow::requiredFileDownloadFileFinished(QNetworkReply* reply) {
 
 void MainWindow::patchesDownloadFileFinished(QNetworkReply* reply) {
     if (reply && reply->error() != QNetworkReply::NoError) {
-        // QMessageBox::warning(this, "ERROR getting new patch information", reply->errorString());
+//        QMessageBox::warning(this, "ERROR getting new patch information", reply->errorString());
         updateTimeCounter = -1;
         enableStart();
 
@@ -713,23 +720,25 @@ void MainWindow::patchesDownloadFileFinished(QNetworkReply* reply) {
             QString md5 = query.at(2).trimmed();
             QString action = query.at(3);
 
-            QString file = swgFolder + "/" + name;
+            QString file2 = swgFolder + "/" + name;
 
-            QFile fileObject(file);
+            QFile file1(file2);
 
-            if ((action == "A") && !fileObject.exists()) {
-                qDebug() << file << "doesnt exist";
+            if ((action == "A") && !file1.exists()) {
+                qDebug() << file2 << "doesnt exist";
 
-                appendToFilesToDownloadStringList(MainWindow::patchUrl + name);
-
-                continue;
-            } else if ((action == "D") && fileObject.exists()) {
-                if (!file.contains("..")) {
-                    fileObject.remove();
+                appendToFilesToDownloadStringList(this->patchUrl + name);
+//asdf
+                filesToDownload.append(name);
+                //emit startDownload();
+//                continue;
+            } else if ((action == "D") && file1.exists()) {
+                if (!file2.contains("..")) {
+                    file1.remove();
                 } else {
                     qDebug() << "file to delete contains invalid characters";
                 }
-            } else if (action == "ADDTRE" && fileObject.exists()) {
+            } else if (action == "ADDTRE" && file1.exists()) {
 
             }
         }
@@ -1283,15 +1292,16 @@ void MainWindow::startSWG() {
     arguments.append("-s");
     arguments.append("ClientGame");
 
-    if (server != NULL)
+    if (server != nullptr){
         arguments.append("loginServerAddress0=" + server->getHost());
-    else
-        arguments.append("loginServerAddress0=" + this->defaultLoginAddress);
-
-    if (server == NULL)
+    }else{
+        arguments.append("loginServerAddress0=" + this->selectedLoginAddress);
+    }
+    if (server == nullptr){
         arguments.append("loginServerPort0=" + this->defaultLoginPort);
-    else
+    }else{
         arguments.append("loginServerPort0=" + server->getPort());
+    }
 
     arguments.append("-s");
     arguments.append("Station");

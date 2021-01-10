@@ -24,8 +24,11 @@ public:
   void setPort(const QString& port);
 
   void disableNameEdit();
-  
-private:
+
+  private slots:
+  void on_lineEdit_host_textChanged(const QString &arg1);
+
+  private:
   Ui::AddLoginServer *ui;
 };
 
